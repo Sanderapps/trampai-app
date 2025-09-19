@@ -7,11 +7,11 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
-import { useForm, SubmitHandler, useFieldArray } from "react-hook-form";
+import { useForm, SubmitHandler, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from "@/hooks/use-toast";
-import { Bot, PlusCircle, Save, Send, Sparkles, Trash2 } from "lucide-react";
+import { Bot, CalendarIcon, PlusCircle, Save, Send, Sparkles, Trash2 } from "lucide-react";
 import { updateProfile } from "firebase/auth";
 import { db } from "@/lib/firebase/client";
 import { doc, setDoc } from "firebase/firestore";
@@ -21,6 +21,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ConversationMessage, ProfileData } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+
 
 // Schema for the manual form
 const experienceSchema = z.object({
@@ -38,7 +44,7 @@ const educationSchema = z.object({
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório.'),
-  age: z.coerce.number().optional(),
+  birthDate: z.date().optional(),
   phone: z.string().optional(),
   location: z.string().optional(),
   summary: z.string().optional(),
@@ -110,18 +116,23 @@ export default function CandidateProfilePage() {
       const parsedExperiences = safeJsonParse(userProfile.experience, []);
       const parsedEducation = safeJsonParse(userProfile.education, []);
 
+      // If experience is a string, it means it's an old format.
+      // We'll move it to the summary if the summary is empty.
+      const summaryFromOldExperience = typeof userProfile.experience === 'string' && parsedExperiences.length === 0 ? userProfile.experience : '';
+
       profileForm.reset({
         name: userProfile.displayName || '',
-        age: userProfile.age || undefined,
+        birthDate: userProfile.birthDate ? new Date(userProfile.birthDate) : undefined,
         phone: userProfile.phone || '',
         location: userProfile.location || '',
-        summary: userProfile.summary || (typeof userProfile.experience === 'string' && parsedExperiences.length === 0 ? userProfile.experience : ''),
+        summary: userProfile.summary || summaryFromOldExperience,
         skills: userProfile.skills || '',
         experiences: parsedExperiences,
         education: parsedEducation,
       });
     }
   }, [userProfile, profileForm.reset]);
+
 
 
   useEffect(() => {
@@ -207,7 +218,7 @@ export default function CandidateProfilePage() {
         await setDoc(userDocRef, {
             ...userProfile,
             displayName: profileData.name,
-            age: profileData.age,
+            birthDate: profileData.birthDate?.toISOString(),
             phone: profileData.phone,
             location: profileData.location,
             summary: profileData.summary,
@@ -263,8 +274,39 @@ export default function CandidateProfilePage() {
                         {profileForm.formState.errors.name && <p className="text-sm text-destructive">{profileForm.formState.errors.name.message}</p>}
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="age">Idade</Label>
-                        <Input id="age" type="number" {...profileForm.register("age")} />
+                        <Label htmlFor="birthDate">Data de Nascimento</Label>
+                          <Controller
+                            control={profileForm.control}
+                            name="birthDate"
+                            render={({ field }) => (
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !field.value && "text-muted-foreground"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Selecione a data</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={field.value}
+                                            onSelect={field.onChange}
+                                            initialFocus
+                                            locale={ptBR}
+                                            captionLayout="dropdown-buttons"
+                                            fromYear={1950}
+                                            toYear={new Date().getFullYear()}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            )}
+                        />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="phone">Telefone</Label>
@@ -432,4 +474,4 @@ export default function CandidateProfilePage() {
   );
 }
 
-    
+      

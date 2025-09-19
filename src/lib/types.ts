@@ -71,7 +71,7 @@ export type UserProfile = {
   resumeText?: string;
   photoURL?: string;
   summary?: string;
-  age?: number;
+  birthDate?: string;
 }
 
 // Defines a single message in the conversation history for the conversational resume AI
@@ -127,3 +127,5 @@ export const ConversationalResumeOutputSchema = z.object({
 export type ConversationalResumeOutput = z.infer<typeof ConversationalResumeOutputSchema>;
 
     
+
+      

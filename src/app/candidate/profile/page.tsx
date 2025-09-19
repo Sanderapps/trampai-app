@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { resumeAutoFill } from '@/ai/flows/resume-auto-fill';
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Camera } from "lucide-react";
@@ -17,6 +19,21 @@ import { updateProfile } from "firebase/auth";
 import { auth, db } from "@/lib/firebase/client";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+
+// Define Zod schema for form validation
+const profileSchema = z.object({
+    name: z.string().min(2, "Nome é obrigatório."),
+    email: z.string().email(),
+    phone: z.string().min(10, "Telefone é obrigatório."),
+    location: z.string().optional(),
+    linkedinUrl: z.string().url("Por favor, insira uma URL válida.").optional().or(z.literal('')),
+    experience: z.string().optional(),
+    skills: z.string().optional(),
+    resumeText: z.string().optional(),
+});
+
+type ProfileFormValues = z.infer<typeof profileSchema>;
+
 
 // Helper function to resize and optimize image
 const resizeImage = (file: File): Promise<string> => {
@@ -65,7 +82,9 @@ const resizeImage = (file: File): Promise<string> => {
 export default function CandidateProfilePage() {
   const { user, userProfile, loading, reloadUserData } = useAuth();
   const router = useRouter();
-  const { register, setValue, handleSubmit, watch } = useForm();
+  const { register, setValue, handleSubmit, watch, formState: { errors } } = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileSchema)
+  });
   const { toast } = useToast();
   const [isParsing, setIsParsing] = useState(false);
   const [photoUrl, setPhotoUrl] = useState(user?.photoURL);
@@ -87,6 +106,7 @@ export default function CandidateProfilePage() {
             const data = docSnap.data();
             setValue("phone", data.phone);
             setValue("location", data.location);
+            setValue("linkedinUrl", data.linkedinUrl);
             setValue("experience", data.experience);
             setValue("skills", data.skills);
             setValue("resumeText", data.resumeText);
@@ -115,8 +135,8 @@ export default function CandidateProfilePage() {
     try {
       const result = await resumeAutoFill({ resumeText });
       
-      setValue("name", result.name || user?.displayName);
-      setValue("phone", result.phone);
+      setValue("name", result.name || user?.displayName, { shouldValidate: true });
+      setValue("phone", result.phone, { shouldValidate: true });
       setValue("experience", result.experience.join('\\n\\n'));
       setValue("skills", result.skills.join(', '));
       // Education is not a field yet, but we could add it.
@@ -172,7 +192,7 @@ export default function CandidateProfilePage() {
   }
 
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: ProfileFormValues) => {
     if (!user) return;
     try {
         await updateProfile(user, { displayName: data.name });
@@ -182,6 +202,7 @@ export default function CandidateProfilePage() {
             ...userProfile,
             phone: data.phone,
             location: data.location,
+            linkedinUrl: data.linkedinUrl,
             experience: data.experience,
             skills: data.skills,
             resumeText: data.resumeText,
@@ -263,6 +284,7 @@ export default function CandidateProfilePage() {
             <div className="space-y-2">
               <Label htmlFor="name">Nome Completo</Label>
               <Input id="name" {...register("name")} />
+              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -271,10 +293,16 @@ export default function CandidateProfilePage() {
             <div className="space-y-2">
               <Label htmlFor="phone">Telefone</Label>
               <Input id="phone" type="tel" placeholder="(51) 91234-5678" {...register("phone")} />
+              {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="location">Localização</Label>
+              <Label htmlFor="location">Localização (Opcional)</Label>
               <Input id="location" placeholder="Porto Alegre, RS" {...register("location")} />
+            </div>
+             <div className="sm:col-span-2 space-y-2">
+              <Label htmlFor="linkedinUrl">LinkedIn (Opcional)</Label>
+              <Input id="linkedinUrl" type="url" placeholder="https://www.linkedin.com/in/seu-perfil" {...register("linkedinUrl")} />
+              {errors.linkedinUrl && <p className="text-sm text-destructive">{errors.linkedinUrl.message}</p>}
             </div>
           </CardContent>
         </Card>

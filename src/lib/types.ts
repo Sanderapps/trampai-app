@@ -58,6 +58,7 @@ export type UserProfile = {
   accountType: 'candidate' | 'employer';
   phone?: string;
   location?: string;
+  linkedinUrl?: string;
   experience?: string;
   skills?: string;
   resumeText?: string;

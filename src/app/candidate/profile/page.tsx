@@ -38,6 +38,7 @@ const educationSchema = z.object({
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório.'),
+  age: z.coerce.number().optional(),
   phone: z.string().optional(),
   location: z.string().optional(),
   summary: z.string().optional(),
@@ -97,6 +98,8 @@ export default function CandidateProfilePage() {
         return JSON.parse(jsonString);
     } catch (e) {
         console.warn("Failed to parse JSON, falling back.", e);
+        // If parsing fails, and the string looks like it could be a description, return an empty array
+        // and let the logic below handle it.
         return fallback;
     }
   };
@@ -109,9 +112,10 @@ export default function CandidateProfilePage() {
 
       profileForm.reset({
         name: userProfile.displayName || '',
+        age: userProfile.age || undefined,
         phone: userProfile.phone || '',
         location: userProfile.location || '',
-        summary: userProfile.summary || (typeof userProfile.experience === 'string' && parsedExperiences.length === 0 ? userProfile.experience : ''), // Fallback for old data
+        summary: userProfile.summary || (typeof userProfile.experience === 'string' && parsedExperiences.length === 0 ? userProfile.experience : ''),
         skills: userProfile.skills || '',
         experiences: parsedExperiences,
         education: parsedEducation,
@@ -203,6 +207,7 @@ export default function CandidateProfilePage() {
         await setDoc(userDocRef, {
             ...userProfile,
             displayName: profileData.name,
+            age: profileData.age,
             phone: profileData.phone,
             location: profileData.location,
             summary: profileData.summary,
@@ -249,7 +254,7 @@ export default function CandidateProfilePage() {
         <form onSubmit={profileForm.handleSubmit(onManualSubmit)} className="mt-8 space-y-8">
              <Card>
                 <CardHeader>
-                    <CardTitle>Informações Pessoais</CardTitle>
+                    <CardTitle>Informações Pessoais e de Contato</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <div className="space-y-2">
@@ -257,11 +262,15 @@ export default function CandidateProfilePage() {
                         <Input id="name" {...profileForm.register("name")} />
                         {profileForm.formState.errors.name && <p className="text-sm text-destructive">{profileForm.formState.errors.name.message}</p>}
                     </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="age">Idade</Label>
+                        <Input id="age" type="number" {...profileForm.register("age")} />
+                    </div>
                     <div className="space-y-2">
                         <Label htmlFor="phone">Telefone</Label>
                         <Input id="phone" {...profileForm.register("phone")} />
                     </div>
-                     <div className="sm:col-span-2 space-y-2">
+                     <div className="space-y-2">
                         <Label htmlFor="location">Cidade e Estado</Label>
                         <Input id="location" placeholder="Ex: Porto Alegre, RS" {...profileForm.register("location")} />
                     </div>
@@ -422,3 +431,5 @@ export default function CandidateProfilePage() {
     </div>
   );
 }
+
+    

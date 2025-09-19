@@ -71,6 +71,7 @@ export type UserProfile = {
   resumeText?: string;
   photoURL?: string;
   summary?: string;
+  age?: number;
 }
 
 // Defines a single message in the conversation history for the conversational resume AI
@@ -83,16 +84,16 @@ export type ConversationMessage = z.infer<typeof ConversationMessageSchema>;
 
 // Zod schemas for structured data
 export const ExperienceSchema = z.object({
-    role: z.string().optional().describe("The job title or role."),
-    company: z.string().optional().describe("The name of the company."),
+    role: z.string().min(1, "Cargo é obrigatório").describe("The job title or role."),
+    company: z.string().min(1, "Empresa é obrigatória").describe("The name of the company."),
     startDate: z.string().optional().describe("The start date of the employment (e.g., 'MM/AAAA')."),
     endDate: z.string().optional().describe("The end date of the employment (e.g., 'MM/AAAA' or 'Atual')."),
 });
 export type Experience = z.infer<typeof ExperienceSchema>;
 
 export const EducationSchema = z.object({
-    course: z.string().optional().describe("The name of the course or degree."),
-    institution: z.string().optional().describe("The name of the educational institution."),
+    course: z.string().min(1, "Curso é obrigatório").describe("The name of the course or degree."),
+    institution: z.string().min(1, "Instituição é obrigatória").describe("The name of the educational institution."),
     endDate: z.string().optional().describe("The end date or year of conclusion."),
 });
 export type Education = z.infer<typeof EducationSchema>;
@@ -124,3 +125,5 @@ export const ConversationalResumeOutputSchema = z.object({
     profile: ProfileDataSchema.describe("The structured profile data collected so far."),
 });
 export type ConversationalResumeOutput = z.infer<typeof ConversationalResumeOutputSchema>;
+
+    

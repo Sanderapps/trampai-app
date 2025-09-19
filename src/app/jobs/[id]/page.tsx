@@ -119,6 +119,11 @@ export default function JobDetailsPage() {
     }
   };
 
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast({ title: "Link copiado!", description: "O link da vaga foi copiado para sua área de transferência." });
+  }
+
 
   const company = job ? companies.find(c => c.id === job.companyId) : null;
 
@@ -174,7 +179,7 @@ export default function JobDetailsPage() {
                                     </CardDescription>
                                 </div>
                                 <div className="flex gap-2">
-                                     <Button variant="outline" size="icon">
+                                     <Button variant="outline" size="icon" onClick={handleShare}>
                                         <Share2 className="h-5 w-5" />
                                      </Button>
                                      <Button variant="outline" size="icon" onClick={handleSaveJob}>
@@ -187,7 +192,7 @@ export default function JobDetailsPage() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="prose max-w-none text-foreground" dangerouslySetInnerHTML={{ __html: job.description.replace(/\n/g, '<br />') }}/>
+                            <div className="prose max-w-none text-foreground" dangerouslySetInnerHTML={{ __html: job.description.replace(/\\n/g, '<br />') }}/>
                         </CardContent>
                     </Card>
 

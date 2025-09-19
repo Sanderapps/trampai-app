@@ -26,7 +26,7 @@ const profileSchema = z.object({
     email: z.string().email(),
     phone: z.string().min(10, "Telefone é obrigatório."),
     location: z.string().optional(),
-    linkedinUrl: z.string().url("Por favor, insira uma URL válida.").optional().or(z.literal('')),
+    linkedinUrl: z.string().optional(),
     experience: z.string().optional(),
     skills: z.string().optional(),
     resumeText: z.string().optional(),
@@ -301,7 +301,7 @@ export default function CandidateProfilePage() {
             </div>
              <div className="sm:col-span-2 space-y-2">
               <Label htmlFor="linkedinUrl">LinkedIn (Opcional)</Label>
-              <Input id="linkedinUrl" type="url" placeholder="https://www.linkedin.com/in/seu-perfil" {...register("linkedinUrl")} />
+              <Input id="linkedinUrl" type="text" placeholder="linkedin.com/in/seu-perfil" {...register("linkedinUrl")} />
               {errors.linkedinUrl && <p className="text-sm text-destructive">{errors.linkedinUrl.message}</p>}
             </div>
           </CardContent>

@@ -24,6 +24,14 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 
+function formatSocialUrl(url: string) {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+    }
+    return `https://${url}`;
+}
+
 export default function ApplicantsPage() {
   const params = useParams();
   const jobId = params.id as string;
@@ -247,7 +255,7 @@ export default function ApplicantsPage() {
                                 {selectedApplication?.candidateSocialUrl && (
                                      <div className="flex items-center gap-2 text-sm text-muted-foreground pt-1">
                                         <Share2 className="h-4 w-4"/>
-                                        <a href={selectedApplication.candidateSocialUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                        <a href={formatSocialUrl(selectedApplication.candidateSocialUrl)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                                             {selectedApplication.candidateSocialUrl}
                                         </a>
                                     </div>

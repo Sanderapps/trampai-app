@@ -34,7 +34,7 @@ const applySchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório'),
   email: z.string().email('E-mail inválido'),
   phone: z.string().min(10, "Telefone é obrigatório."),
-  socialUrl: z.string().url("Por favor, insira uma URL válida.").optional().or(z.literal('')),
+  socialUrl: z.string().optional(),
   resume: z.any()
     .refine((files) => files?.[0], 'Currículo é obrigatório.')
     .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, `O arquivo do currículo deve ter no máximo ${MAX_FILE_SIZE / 1024}KB.`)
@@ -272,7 +272,7 @@ export default function ApplyPage() {
                 </div>
                 <div className="space-y-2">
                 <Label htmlFor="socialUrl">Rede Social (LinkedIn, etc.)</Label>
-                <Input id="socialUrl" type="url" placeholder="https://linkedin.com/in/seu-perfil" {...register('socialUrl')} />
+                <Input id="socialUrl" type="text" placeholder="linkedin.com/in/seu-perfil" {...register('socialUrl')} />
                 {errors.socialUrl && <p className="text-sm text-destructive">{errors.socialUrl.message}</p>}
                 </div>
             </div>

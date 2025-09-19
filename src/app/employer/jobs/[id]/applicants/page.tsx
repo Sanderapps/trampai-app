@@ -458,20 +458,30 @@ export default function ApplicantsPage() {
                             </div>
                         )}
                         
-                        {selectedCandidate.experience && (
+                        {selectedCandidate.experience && JSON.parse(selectedCandidate.experience).length > 0 && (
                             <div>
                                 <h3 className="text-lg font-semibold flex items-center gap-2 mb-2"><Briefcase className='h-5 w-5 text-primary'/> Experiência</h3>
                                 <div className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground">
-                                    {selectedCandidate.experience}
+                                    {JSON.parse(selectedCandidate.experience).map((exp: any, index: number) => (
+                                        <div key={index} className='mb-4'>
+                                            <p className='font-bold my-0'>{exp.role} em {exp.company}</p>
+                                            <p className='text-xs text-muted-foreground my-0'>{exp.startDate} - {exp.endDate}</p>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         )}
 
-                        {selectedCandidate.education && (
+                        {selectedCandidate.education && JSON.parse(selectedCandidate.education).length > 0 && (
                             <div>
                                 <h3 className="text-lg font-semibold flex items-center gap-2 mb-2"><FileText className='h-5 w-5 text-primary'/> Educação</h3>
                                  <div className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground">
-                                    {selectedCandidate.education}
+                                    {JSON.parse(selectedCandidate.education).map((edu: any, index: number) => (
+                                        <div key={index} className='mb-4'>
+                                            <p className='font-bold my-0'>{edu.course}</p>
+                                            <p className='text-xs text-muted-foreground my-0'>{edu.institution} - {edu.endDate}</p>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         )}
@@ -502,5 +512,3 @@ export default function ApplicantsPage() {
     </div>
   );
 }
-
-    

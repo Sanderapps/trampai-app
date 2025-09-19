@@ -34,12 +34,15 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
     notFound();
   }
   
-  const formatSalary = (salary: { min: number; max: number } | undefined) => {
-    if (!salary) return 'A combinar';
-    if (salary.min === salary.max) {
-      return `R$ ${salary.min.toLocaleString('pt-BR')}`;
+  const formatSalary = (job: Job) => {
+    if (job.type === 'Extra/Freelancer') {
+        return job.dailyRate ? `R$ ${job.dailyRate.toLocaleString('pt-BR')} / dia` : 'A combinar';
     }
-    return `R$ ${salary.min.toLocaleString('pt-BR')} - R$ ${salary.max.toLocaleString('pt-BR')}`;
+    if (!job.salary) return 'A combinar';
+    if (job.salary.min === job.salary.max) {
+      return `R$ ${job.salary.min.toLocaleString('pt-BR')}`;
+    }
+    return `R$ ${job.salary.min.toLocaleString('pt-BR')} - R$ ${job.salary.max.toLocaleString('pt-BR')}`;
   };
 
 
@@ -77,7 +80,6 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
                             </div>
                              <div className="mt-4 flex flex-wrap gap-2">
                                 <Badge variant="secondary">{job.type}</Badge>
-                                {job.level && <Badge variant="secondary">{job.level}</Badge>}
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -119,8 +121,8 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
                              <div className="flex items-center gap-3 text-sm">
                                 <BadgeDollarSign className="h-5 w-5 text-muted-foreground" />
                                 <div>
-                                    <p className="font-semibold">Salário</p>
-                                    <p className="text-muted-foreground">{formatSalary(job.salary)}</p>
+                                    <p className="font-semibold">Remuneração</p>
+                                    <p className="text-muted-foreground">{formatSalary(job)}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 text-sm">

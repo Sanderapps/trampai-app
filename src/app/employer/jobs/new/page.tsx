@@ -21,9 +21,9 @@ const jobSchema = z.object({
   jobDescription: z.string().min(50, 'Descrição da vaga é obrigatória'),
   location: z.string().min(3, 'Localização é obrigatória'),
   type: z.string({ required_error: 'Tipo de contrato é obrigatório' }),
-  level: z.string().optional(),
   salaryMin: z.coerce.number().optional(),
   salaryMax: z.coerce.number().optional(),
+  dailyRate: z.coerce.number().optional(),
 });
 
 type JobFormValues = z.infer<typeof jobSchema>;
@@ -39,6 +39,7 @@ export default function NewJobPage() {
   
   const jobTitle = watch('jobTitle');
   const keywords = watch('keywords');
+  const contractType = watch('type');
 
   const handleGenerateDescription = async () => {
     if (!jobTitle || !keywords) {
@@ -136,16 +137,23 @@ export default function NewJobPage() {
               </div>
             </div>
 
-             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="salaryMin">Salário (mínimo, opcional)</Label>
-                <Input id="salaryMin" type="number" placeholder="Ex: 4000" {...register('salaryMin')} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="salaryMax">Salário (máximo, opcional)</Label>
-                <Input id="salaryMax" type="number" placeholder="Ex: 6000" {...register('salaryMax')} />
-              </div>
-            </div>
+            {contractType === 'Extra/Freelancer' ? (
+                <div className="space-y-2">
+                    <Label htmlFor="dailyRate">Valor da Diária (opcional)</Label>
+                    <Input id="dailyRate" type="number" placeholder="Ex: 300" {...register('dailyRate')} />
+                </div>
+            ) : (
+                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="salaryMin">Salário (mínimo, opcional)</Label>
+                    <Input id="salaryMin" type="number" placeholder="Ex: 4000" {...register('salaryMin')} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="salaryMax">Salário (máximo, opcional)</Label>
+                    <Input id="salaryMax" type="number" placeholder="Ex: 6000" {...register('salaryMax')} />
+                  </div>
+                </div>
+            )}
 
             <div className="flex justify-end pt-4">
                 <Button type="submit" size="lg" disabled={isSubmitting}>

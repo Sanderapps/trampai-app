@@ -38,12 +38,15 @@ interface JobCardProps {
 }
 
 export function JobCard({ job }: JobCardProps) {
-  const formatSalary = (salary: { min: number; max: number } | undefined) => {
-    if (!salary) return 'A combinar';
-    if (salary.min === salary.max) {
-      return `R$ ${salary.min.toLocaleString('pt-BR')}`;
+  const formatSalary = (job: Job) => {
+    if (job.type === 'Extra/Freelancer') {
+        return job.dailyRate ? `R$ ${job.dailyRate.toLocaleString('pt-BR')} / dia` : 'A combinar';
     }
-    return `R$ ${salary.min.toLocaleString('pt-BR')} - R$ ${salary.max.toLocaleString('pt-BR')}`;
+    if (!job.salary) return 'A combinar';
+    if (job.salary.min === job.salary.max) {
+      return `R$ ${job.salary.min.toLocaleString('pt-BR')}`;
+    }
+    return `R$ ${job.salary.min.toLocaleString('pt-BR')} - R$ ${job.salary.max.toLocaleString('pt-BR')}`;
   };
 
   return (
@@ -64,7 +67,6 @@ export function JobCard({ job }: JobCardProps) {
           </CardDescription>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge variant="secondary">{job.type}</Badge>
-            {job.level && <Badge variant="secondary">{job.level}</Badge>}
           </div>
         </div>
         <TooltipProvider>
@@ -87,7 +89,7 @@ export function JobCard({ job }: JobCardProps) {
         </div>
         <div className="flex items-center gap-2">
           <BadgeDollarSign className="h-4 w-4" />
-          <span>{formatSalary(job.salary)}</span>
+          <span>{formatSalary(job)}</span>
         </div>
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4" />

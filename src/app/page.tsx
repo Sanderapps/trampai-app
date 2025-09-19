@@ -18,15 +18,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { JobCard } from '@/components/jobs/job-card';
-import placeholderData from '@/lib/placeholder-images.json';
 import { Card, CardContent } from '@/components/ui/card';
 import { useEffect, useState } from 'react';
 import { Job } from '@/lib/types';
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const heroImage = placeholderData.placeholderImages.find((img) => img.id === 'hero-bg');
 
 const categories = [
   { name: 'Restaurantes', icon: UtensilsCrossed, slug: 'restaurantes' },
@@ -64,16 +61,14 @@ export default function Home() {
     <div className="flex flex-col">
       <section className="relative -mt-[var(--header-height)] flex min-h-[500px] flex-col justify-center">
         <div className="absolute inset-0">
-          {heroImage && (
-            <Image
-              src={heroImage.imageUrl}
-              alt={heroImage.description}
-              fill
-              className="object-cover"
-              data-ai-hint={heroImage.imageHint}
-              priority
-            />
-          )}
+          <Image
+            src="https://images.unsplash.com/photo-1604212134542-3a554a90583b?q=80&w=1920&auto=format&fit=crop"
+            alt="A panoramic view of Porto Alegre, the capital of Rio Grande do Sul."
+            fill
+            className="object-cover"
+            data-ai-hint="city skyline"
+            priority
+          />
           <div className="absolute inset-0 bg-black/50" />
         </div>
         <div className="relative mx-auto w-full max-w-7xl px-4 pt-[var(--header-height)] text-center text-primary-foreground sm:px-6 lg:px-8">

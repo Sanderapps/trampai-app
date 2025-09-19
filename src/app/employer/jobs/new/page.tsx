@@ -44,9 +44,13 @@ export default function NewJobPage() {
   });
 
   useEffect(() => {
-    if (!authLoading && (!user || (userProfile && userProfile.accountType !== 'employer'))) {
+    if (!authLoading) {
+      if (!user) {
+        router.push('/login?redirect=/employer/jobs/new');
+      } else if (userProfile && userProfile.accountType !== 'employer') {
         toast({ variant: 'destructive', title: 'Acesso Negado', description: 'Você deve ser um empregador para postar vagas.'});
-        router.push('/login');
+        router.push('/candidate/dashboard');
+      }
     }
   }, [user, userProfile, authLoading, router, toast]);
   

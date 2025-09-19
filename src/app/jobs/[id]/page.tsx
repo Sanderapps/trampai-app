@@ -1,7 +1,7 @@
 
 'use client';
 import { Job } from '@/lib/types';
-import { notFound, useParams } from 'next/navigation';
+import { notFound, useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { doc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, Timestamp, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,12 +34,18 @@ import { companies } from '@/lib/companies';
 import { formatSalary, getPostedAt } from '@/lib/job-utils';
 import { JobInfoItem } from '@/components/jobs/job-info-item';
 import { BenefitList } from '@/components/jobs/benefit-list';
+import { useAuth } from '@/contexts/auth-context';
+import { useToast } from '@/hooks/use-toast';
 
 export default function JobDetailsPage() {
   const params = useParams();
   const jobId = params.id as string;
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
+  const { user, userProfile } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     if (!jobId) return;
@@ -63,6 +69,55 @@ export default function JobDetailsPage() {
 
     fetchJob();
   }, [jobId]);
+
+   useEffect(() => {
+    const checkIfSaved = async () => {
+        if (!user || !job || userProfile?.accountType !== 'candidate') return;
+        const savedJobRef = doc(db, 'users', user.uid, 'savedJobs', job.id);
+        const docSnap = await getDoc(savedJobRef);
+        setIsSaved(docSnap.exists());
+    };
+    if (job) {
+        checkIfSaved();
+    }
+  }, [user, job, userProfile]);
+
+  const handleSaveJob = async () => {
+    if (!user) {
+      router.push(`/login?redirect=/jobs/${jobId}`);
+      return;
+    }
+     if (userProfile?.accountType !== 'candidate') {
+      toast({
+        variant: "destructive",
+        title: "Ação não permitida",
+        description: "Apenas candidatos podem salvar vagas.",
+      });
+      return;
+    }
+
+    const savedJobRef = doc(db, 'users', user.uid, 'savedJobs', jobId);
+
+    try {
+        if (isSaved) {
+            await deleteDoc(savedJobRef);
+            setIsSaved(false);
+            toast({ title: "Vaga removida da sua lista."});
+        } else {
+            await setDoc(savedJobRef, { jobId: jobId, savedAt: new Date() });
+            setIsSaved(true);
+            toast({ title: "Vaga salva com sucesso!"});
+        }
+    } catch (error) {
+        console.error("Error saving/unsaving job: ", error);
+        toast({
+            variant: "destructive",
+            title: "Erro",
+            description: "Não foi possível salvar a vaga. Tente novamente.",
+        });
+    }
+  };
+
 
   const company = job ? companies.find(c => c.id === job.companyId) : null;
 
@@ -120,8 +175,8 @@ export default function JobDetailsPage() {
                                      <Button variant="outline" size="icon">
                                         <Share2 className="h-5 w-5" />
                                      </Button>
-                                     <Button variant="outline" size="icon">
-                                        <Heart className="h-5 w-5" />
+                                     <Button variant="outline" size="icon" onClick={handleSaveJob}>
+                                        <Heart className={`h-5 w-5 ${isSaved ? 'fill-destructive text-destructive' : ''}`} />
                                      </Button>
                                 </div>
                             </div>

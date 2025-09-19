@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Briefcase, Menu } from 'lucide-react';
+import { Briefcase, Menu, LayoutDashboard, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -20,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Skeleton } from '../ui/skeleton';
 
 const navLinks = [
   { href: '/jobs', label: 'Vagas' },
@@ -28,15 +29,22 @@ const navLinks = [
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, loading, signOut } = useAuth();
+  const { user, userProfile, loading, signOut } = useAuth();
   const userInitial = user?.displayName?.charAt(0) ?? '';
 
   const getDashboardLink = () => {
-    // This is a simplification. In a real app, you'd have user roles.
-    // We'll arbitrarily decide based on where they logged in from, but
-    // a real implementation would have this info in the user profile.
-    // For now, let's just default to candidate dashboard.
+    if (userProfile?.accountType === 'employer') {
+        return '/employer/dashboard';
+    }
     return '/candidate/dashboard';
+  }
+
+  const getProfileLink = () => {
+    if (userProfile?.accountType === 'employer') {
+        // Employer profile page doesn't exist yet, so we default to dashboard
+        return '/employer/dashboard';
+    }
+    return '/candidate/profile';
   }
 
 
@@ -65,7 +73,7 @@ export function Header() {
 
         <div className="hidden items-center gap-2 md:flex">
           {loading ? (
-            <div className="h-10 w-24 animate-pulse rounded-md bg-muted"></div>
+            <Skeleton className="h-10 w-24 rounded-md" />
           ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -85,14 +93,14 @@ export function Header() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                    <Link href={getDashboardLink()}>Painel</Link>
+                    <Link href={getDashboardLink()}><LayoutDashboard className='mr-2'/>Painel</Link>
                 </DropdownMenuItem>
                  <DropdownMenuItem asChild>
-                    <Link href="/candidate/profile">Meu Perfil</Link>
+                    <Link href={getProfileLink()}><User className='mr-2'/>Meu Perfil</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={signOut}>
-                  Sair
+                  <LogOut className='mr-2'/>Sair
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -143,7 +151,7 @@ export function Header() {
                  {user ? (
                    <>
                     <Link href={getDashboardLink()} className='px-3 py-2 text-base font-medium' onClick={() => setIsMobileMenuOpen(false)}>Painel</Link>
-                    <Link href="/candidate/profile" className='px-3 py-2 text-base font-medium' onClick={() => setIsMobileMenuOpen(false)}>Meu Perfil</Link>
+                    <Link href={getProfileLink()} className='px-3 py-2 text-base font-medium' onClick={() => setIsMobileMenuOpen(false)}>Meu Perfil</Link>
                     <Button variant="ghost" onClick={() => {signOut(); setIsMobileMenuOpen(false);}}>Sair</Button>
                    </>
                  ) : (

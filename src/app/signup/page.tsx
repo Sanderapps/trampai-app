@@ -6,7 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '@/lib/firebase/client';
+import { auth, db } from '@/lib/firebase/client';
+import { doc, setDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button'
 import {
@@ -42,13 +43,22 @@ export default function SignupPage() {
 
     const onSubmit = async (data: SignupFormValues) => {
         try {
+            // 1. Create user in Firebase Auth
             const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-            await updateProfile(userCredential.user, {
+            const user = userCredential.user;
+            
+            // 2. Update Auth user profile with name
+            await updateProfile(user, {
                 displayName: data.name
             });
 
-            // Here you could also save the accountType to Firestore or another database
-            // associated with the user's UID (userCredential.user.uid)
+            // 3. Create user document in Firestore with their role
+            await setDoc(doc(db, "users", user.uid), {
+                uid: user.uid,
+                displayName: data.name,
+                email: user.email,
+                accountType: data.accountType,
+            });
 
             toast({
                 title: "Cadastro realizado com sucesso!",

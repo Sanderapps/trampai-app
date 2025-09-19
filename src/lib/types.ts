@@ -45,3 +45,15 @@ export type Application = {
     appliedAt: Timestamp;
     status: 'Em Análise' | 'Visualizado' | 'Rejeitado';
 }
+
+export type UserProfile = {
+  uid: string;
+  displayName: string;
+  email: string;
+  accountType: 'candidate' | 'employer';
+  phone?: string;
+  location?: string;
+  experience?: string;
+  skills?: string;
+  resumeText?: string;
+}

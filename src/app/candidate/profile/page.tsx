@@ -14,17 +14,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Camera } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { updateProfile } from "firebase/auth";
-import { auth } from "@/lib/firebase/client";
-
-// Helper function to convert file to Base64
-const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = error => reject(error);
-    });
-};
+import { auth, db } from "@/lib/firebase/client";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { useRouter } from "next/navigation";
 
 // Helper function to resize and optimize image
 const resizeImage = (file: File): Promise<string> => {
@@ -71,7 +63,8 @@ const resizeImage = (file: File): Promise<string> => {
 
 
 export default function CandidateProfilePage() {
-  const { user, loading, reloadUserData } = useAuth();
+  const { user, userProfile, loading, reloadUserData } = useAuth();
+  const router = useRouter();
   const { register, setValue, handleSubmit, watch } = useForm();
   const { toast } = useToast();
   const [isParsing, setIsParsing] = useState(false);
@@ -82,13 +75,29 @@ export default function CandidateProfilePage() {
   const resumeText = watch('resumeText');
 
   useEffect(() => {
-    if (user) {
+    if (user && userProfile) {
       setValue("name", user.displayName || "");
       setValue("email", user.email || "");
       setPhotoUrl(user.photoURL);
-      // In a real app, you would fetch and set the rest of the profile data
+      
+      const fetchProfileData = async () => {
+        const docRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            setValue("phone", data.phone);
+            setValue("location", data.location);
+            setValue("experience", data.experience);
+            setValue("skills", data.skills);
+            setValue("resumeText", data.resumeText);
+        }
+      }
+      fetchProfileData();
+
+    } else if (!loading && (!user || userProfile?.accountType !== 'candidate')) {
+      router.push('/login');
     }
-  }, [user, setValue]);
+  }, [user, userProfile, loading, setValue, router]);
 
   const handleAutofill = async () => {
     if (!resumeText) {
@@ -167,12 +176,22 @@ export default function CandidateProfilePage() {
     if (!user) return;
     try {
         await updateProfile(user, { displayName: data.name });
-        console.log("Profile data saved:", data);
+        
+        const userDocRef = doc(db, 'users', user.uid);
+        await setDoc(userDocRef, {
+            ...userProfile,
+            phone: data.phone,
+            location: data.location,
+            experience: data.experience,
+            skills: data.skills,
+            resumeText: data.resumeText,
+        }, { merge: true });
+
         reloadUserData();
-        // Here you would typically update the user's profile in your database
         toast({ title: "Perfil salvo!", description: "Suas informações foram atualizadas."})
     } catch(e) {
-        toast({ title: "Erro ao salvar", description: "Não foi possível atualizar o seu nome."})
+        console.error("Error saving profile: ", e);
+        toast({ variant: "destructive", title: "Erro ao salvar", description: "Não foi possível atualizar seu perfil."})
     }
   };
 
@@ -180,10 +199,10 @@ export default function CandidateProfilePage() {
     return <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">Carregando...</div>;
   }
 
-  if (!user) {
+  if (!user || !userProfile || userProfile.accountType !== 'candidate') {
     return <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       <h1 className="font-headline text-3xl font-bold">Acesso Negado</h1>
-      <p className="mt-1 text-muted-foreground">Você precisa estar logado para ver seu perfil.</p>
+      <p className="mt-1 text-muted-foreground">Você precisa estar logado como candidato para ver seu perfil.</p>
       <Link href="/login" className="mt-4 inline-block text-primary underline">Fazer Login</Link>
     </div>
   }

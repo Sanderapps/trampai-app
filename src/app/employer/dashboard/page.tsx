@@ -10,11 +10,13 @@ import { Job } from '@/lib/types';
 import { collection, getDocs, query, where,getCountFromServer } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useRouter } from 'next/navigation';
 
 type JobWithApplicantCount = Job & { applicantCount: number };
 
 export default function EmployerDashboard() {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
+  const router = useRouter();
   const [jobs, setJobs] = useState<JobWithApplicantCount[]>([]);
   const [jobsLoading, setJobsLoading] = useState(true);
 
@@ -44,20 +46,22 @@ export default function EmployerDashboard() {
         setJobsLoading(false);
       }
     }
-
-    if (user) {
+    
+    if (!loading && userProfile && userProfile.accountType !== 'employer') {
+        router.push('/candidate/dashboard');
+    } else if (user) {
         fetchEmployerJobs();
     }
-  }, [user]);
+  }, [user, userProfile, loading, router]);
 
   if (loading) {
     return <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">Carregando...</div>;
   }
 
-  if (!user) {
+  if (!user || !userProfile || userProfile.accountType !== 'employer') {
     return <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <h1 className="font-headline text-3xl font-bold">Acesso Negado</h1>
-      <p className="mt-1 text-muted-foreground">Você precisa estar logado para ver seu painel de empregador.</p>
+      <p className="mt-1 text-muted-foreground">Você precisa estar logado como empregador para ver seu painel.</p>
       <Link href="/login" className="mt-4 inline-block text-primary underline">Fazer Login</Link>
     </div>
   }
@@ -112,7 +116,7 @@ export default function EmployerDashboard() {
         <h2 className="text-xl font-bold">Suas Vagas</h2>
         {jobsLoading ? (
             <div className='mt-4 grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
-                {[...Array(3)].map(i => <Skeleton key={i} className='h-48 w-full' />)}
+                {[...Array(3)].map((_, i) => <Skeleton key={i} className='h-48 w-full' />)}
             </div>
         ) : jobs.length > 0 ? (
             <div className='mt-4 grid gap-6 md:grid-cols-2 lg:grid-cols-3'>

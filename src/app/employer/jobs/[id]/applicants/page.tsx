@@ -15,14 +15,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 
 export default function ApplicantsPage({ params }: { params: { id: string } }) {
-  const { user, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
   const [job, setJob] = useState<Job | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
+      
+      // Role check
+      if (userProfile && userProfile.accountType !== 'employer') {
+        router.push('/candidate/dashboard');
+        return;
+      }
+
       setLoading(true);
       try {
         // Fetch Job Details
@@ -50,10 +58,14 @@ export default function ApplicantsPage({ params }: { params: { id: string } }) {
       }
     };
 
-    if (user) {
-      fetchData();
+    if (!authLoading) {
+      if (user) {
+        fetchData();
+      } else {
+        router.push('/login');
+      }
     }
-  }, [params.id, user]);
+  }, [params.id, user, userProfile, authLoading, router]);
 
   const getAppliedDate = (timestamp: Timestamp) => {
       if (!timestamp) return 'Data indisponível';
@@ -82,11 +94,11 @@ export default function ApplicantsPage({ params }: { params: { id: string } }) {
     );
   }
 
-  if (!user) {
+  if (!user || !userProfile || userProfile.accountType !== 'employer') {
     return (
       <div className="container mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8 text-center">
         <h1 className="text-2xl font-bold">Acesso Negado</h1>
-        <p className="text-muted-foreground mt-2">Você precisa estar logado para ver esta página.</p>
+        <p className="text-muted-foreground mt-2">Você precisa estar logado como empregador para ver esta página.</p>
         <Button asChild className="mt-4"><Link href="/login">Fazer Login</Link></Button>
       </div>
     );

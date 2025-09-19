@@ -9,9 +9,11 @@ import { Application } from "@/lib/types";
 import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function CandidateDashboard() {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
+  const router = useRouter();
   const [appliedJobs, setAppliedJobs] = useState<Application[]>([]);
   const [appsLoading, setAppsLoading] = useState(true);
 
@@ -31,18 +33,22 @@ export default function CandidateDashboard() {
         setAppsLoading(false);
       }
     };
-
-    fetchAppliedJobs();
-  }, [user]);
+    
+    if (!loading && userProfile && userProfile.accountType !== 'candidate') {
+      router.push('/employer/dashboard');
+    } else if (user) {
+       fetchAppliedJobs();
+    }
+  }, [user, userProfile, loading, router]);
 
   if (loading) {
     return <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">Carregando...</div>;
   }
 
-  if (!user) {
+  if (!user || !userProfile || userProfile.accountType !== 'candidate') {
      return <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       <h1 className="font-headline text-3xl font-bold">Acesso Negado</h1>
-      <p className="mt-1 text-muted-foreground">Você precisa estar logado para ver seu painel.</p>
+      <p className="mt-1 text-muted-foreground">Você precisa estar logado como candidato para ver seu painel.</p>
       <Link href="/login" className="mt-4 inline-block text-primary underline">Fazer Login</Link>
     </div>
   }

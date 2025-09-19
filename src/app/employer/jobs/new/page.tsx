@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { generateJobDescription } from '@/ai/flows/job-description-assistant';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
@@ -36,12 +36,19 @@ type JobFormValues = z.infer<typeof jobSchema>;
 export default function NewJobPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm<JobFormValues>({
     resolver: zodResolver(jobSchema),
   });
+
+  useEffect(() => {
+    if (!authLoading && (!user || (userProfile && userProfile.accountType !== 'employer'))) {
+        toast({ variant: 'destructive', title: 'Acesso Negado', description: 'Você deve ser um empregador para postar vagas.'});
+        router.push('/login');
+    }
+  }, [user, userProfile, authLoading, router, toast]);
   
   const jobTitle = watch('jobTitle');
   const keywords = watch('keywords');
@@ -77,8 +84,8 @@ export default function NewJobPage() {
   };
 
   const onSubmit: SubmitHandler<JobFormValues> = async (data) => {
-    if (!user) {
-        toast({ variant: 'destructive', title: 'Erro', description: 'Você precisa estar logado para publicar uma vaga.' });
+    if (!user || userProfile?.accountType !== 'employer') {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Você precisa estar logado como empregador para publicar uma vaga.' });
         return;
     }
 
@@ -122,13 +129,13 @@ export default function NewJobPage() {
     return <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">Carregando...</div>;
   }
 
-  if (!user) {
+  if (!user || !userProfile || userProfile.accountType !== 'employer') {
      return (
         <div className="container mx-auto max-w-4xl px-4 py-12 text-center">
             <h1 className='text-2xl font-bold'>Acesso Negado</h1>
             <p className='text-muted-foreground mt-2'>Você precisa estar logado como empregador para publicar uma vaga.</p>
             <Button asChild className='mt-4'>
-                <Link href="/login?redirect=/employer/jobs/new">Fazer Login</Link>
+                <Link href={`/login?redirect=/employer/jobs/new`}>Fazer Login</Link>
             </Button>
         </div>
      )

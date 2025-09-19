@@ -14,42 +14,60 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase/client';
+import { auth, db } from '@/lib/firebase/client';
+import { doc, getDoc } from 'firebase/firestore';
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
-  accountType: z.enum(['candidate', 'employer'], { required_error: 'Selecione o tipo de conta' }),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
   const { toast } = useToast();
-  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue } = useForm<LoginFormValues>({
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      await signInWithEmailAndPassword(auth, data.email, data.password);
+      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+      const user = userCredential.user;
+
+      // Fetch user profile to determine account type
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        throw new Error("Perfil de usuário não encontrado.");
+      }
+
+      const userProfile = userDoc.data();
       
       toast({
         title: 'Login bem-sucedido!',
       });
-
-      // In a real app, you would fetch user profile data to confirm account type
-      // before redirecting. For this example, we'll trust the user's selection.
-      if (data.accountType === 'candidate') {
-        router.push('/candidate/dashboard');
-      } else {
-        router.push('/employer/dashboard');
+      
+      if (redirectUrl) {
+          router.push(redirectUrl);
+          return;
       }
+
+      if (userProfile.accountType === 'candidate') {
+        router.push('/candidate/dashboard');
+      } else if (userProfile.accountType === 'employer') {
+        router.push('/employer/dashboard');
+      } else {
+        router.push('/'); // Fallback
+      }
+
     } catch (error: any) {
         console.error("Firebase Login Error:", error);
         let description = "Ocorreu um erro ao fazer login. Verifique seu e-mail e senha.";
@@ -96,24 +114,6 @@ export default function LoginPage() {
               {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
             </div>
             
-            <div className="grid gap-2">
-                <Label>Acessar como</Label>
-                <RadioGroup 
-                    onValueChange={(value) => setValue('accountType', value as 'candidate' | 'employer', { shouldValidate: true })} 
-                    className="flex"
-                  >
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="candidate" id="candidate" />
-                        <Label htmlFor="candidate">Candidato</Label>
-                    </div>
-                     <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="employer" id="employer" />
-                        <Label htmlFor="employer">Empregador</Label>
-                    </div>
-                </RadioGroup>
-                {errors.accountType && <p className="text-sm text-destructive">{errors.accountType.message}</p>}
-            </div>
-
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Entrando...' : 'Entrar'}
             </Button>

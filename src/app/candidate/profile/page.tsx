@@ -184,19 +184,19 @@ export default function CandidateProfilePage() {
                 <CardHeader>
                     <CardTitle>Informações Pessoais e de Contato</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <div className="space-y-2">
-                        <Label htmlFor="name">Nome Completo</Label>
-                        <Input id="name" {...profileForm.register("name")} />
-                        {profileForm.formState.errors.name && <p className="text-sm text-destructive">{profileForm.formState.errors.name.message}</p>}
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="birthDate">Data de Nascimento</Label>
-                          <Controller
-                            control={profileForm.control}
-                            name="birthDate"
-                            render={({ field }) => (
-                                <Popover>
+                 <Controller
+                    control={profileForm.control}
+                    name="birthDate"
+                    render={({ field }) => (
+                        <Popover>
+                            <CardContent className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">Nome Completo</Label>
+                                    <Input id="name" {...profileForm.register("name")} />
+                                    {profileForm.formState.errors.name && <p className="text-sm text-destructive">{profileForm.formState.errors.name.message}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="birthDate">Data de Nascimento</Label>
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant={"outline"}
@@ -209,31 +209,31 @@ export default function CandidateProfilePage() {
                                             {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Selecione a data</span>}
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0">
-                                        <Calendar
-                                            mode="single"
-                                            selected={field.value}
-                                            onSelect={field.onChange}
-                                            initialFocus
-                                            locale={ptBR}
-                                            captionLayout="dropdown-buttons"
-                                            fromYear={1950}
-                                            toYear={new Date().getFullYear()}
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            )}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="phone">Telefone</Label>
-                        <Input id="phone" {...profileForm.register("phone")} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="location">Cidade e Estado</Label>
-                        <Input id="location" placeholder="Ex: Porto Alegre, RS" {...profileForm.register("location")} />
-                    </div>
-                </CardContent>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="phone">Telefone</Label>
+                                    <Input id="phone" {...profileForm.register("phone")} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="location">Cidade e Estado</Label>
+                                    <Input id="location" placeholder="Ex: Porto Alegre, RS" {...profileForm.register("location")} />
+                                </div>
+                            </CardContent>
+                             <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    initialFocus
+                                    locale={ptBR}
+                                    captionLayout="dropdown-buttons"
+                                    fromYear={1950}
+                                    toYear={new Date().getFullYear()}
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    )}
+                />
             </Card>
 
             <Card>
@@ -347,5 +347,3 @@ export default function CandidateProfilePage() {
     </div>
   );
 }
-
-    

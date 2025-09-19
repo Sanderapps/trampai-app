@@ -5,36 +5,33 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { useEffect, useState } from "react";
-import { Job } from "@/lib/types";
-import { collection, getDocs, limit, query } from "firebase/firestore";
+import { Application } from "@/lib/types";
+import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 
 export default function CandidateDashboard() {
   const { user, loading } = useAuth();
-  const [appliedJobs, setAppliedJobs] = useState<Job[]>([]);
-  const [jobsLoading, setJobsLoading] = useState(true);
+  const [appliedJobs, setAppliedJobs] = useState<Application[]>([]);
+  const [appsLoading, setAppsLoading] = useState(true);
 
   useEffect(() => {
     const fetchAppliedJobs = async () => {
-      // In a real app, you would fetch jobs the user has actually applied to.
-      // For now, we'll fetch the 2 most recent jobs as mock data.
-      setJobsLoading(true);
+      if (!user) return;
+      setAppsLoading(true);
       try {
-        const jobsCollection = collection(db, "jobs");
-        const q = query(jobsCollection, limit(2));
-        const jobSnapshot = await getDocs(q);
-        const jobList = jobSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
-        setAppliedJobs(jobList);
+        const appsCollection = collection(db, "applications");
+        const q = query(appsCollection, where("candidateId", "==", user.uid));
+        const appSnapshot = await getDocs(q);
+        const appList = appSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Application));
+        setAppliedJobs(appList);
       } catch (error) {
-        console.error("Error fetching jobs for dashboard:", error);
+        console.error("Error fetching applications for dashboard:", error);
       } finally {
-        setJobsLoading(false);
+        setAppsLoading(false);
       }
     };
 
-    if (user) {
-      fetchAppliedJobs();
-    }
+    fetchAppliedJobs();
   }, [user]);
 
   if (loading) {
@@ -49,29 +46,34 @@ export default function CandidateDashboard() {
     </div>
   }
 
+  const getAppliedDate = (timestamp: Timestamp) => {
+      if (!timestamp) return 'Data indisponível';
+      return new Timestamp(timestamp.seconds, timestamp.nanoseconds).toDate().toLocaleDateString('pt-BR');
+  }
+
   return (
     <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       <h1 className="font-headline text-3xl font-bold">Minhas Candidaturas</h1>
       <p className="mt-1 text-muted-foreground">Acompanhe o status das suas candidaturas, {user.displayName}.</p>
 
       <div className="mt-8 space-y-6">
-        {jobsLoading ? (
-            <p>Carregando vagas...</p>
+        {appsLoading ? (
+            <p>Carregando candidaturas...</p>
         ) : appliedJobs.length > 0 ? (
-          appliedJobs.map(job => (
-            <Card key={job.id}>
+          appliedJobs.map(app => (
+            <Card key={app.id}>
               <CardHeader className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                   <CardTitle>
-                      <Link href={`/jobs/${job.id}`} className="hover:underline">{job.title}</Link>
+                      <Link href={`/jobs/${app.jobId}`} className="hover:underline">{app.jobTitle}</Link>
                   </CardTitle>
-                  <CardDescription>{job.companyName}</CardDescription>
+                  <CardDescription>{app.companyName}</CardDescription>
                 </div>
                 <div className="flex items-center">
-                    <Badge>Em Análise</Badge>
+                    <Badge>{app.status}</Badge>
                 </div>
                 <div className="flex items-center justify-start sm:justify-end text-sm text-muted-foreground">
-                  Candidatura enviada em {new Date().toLocaleDateString('pt-BR')}
+                  Candidatura enviada em {getAppliedDate(app.appliedAt)}
                 </div>
               </CardHeader>
             </Card>
@@ -79,6 +81,9 @@ export default function CandidateDashboard() {
         ) : (
           <div className="mt-16 text-center">
             <p className="text-muted-foreground">Você ainda não se candidatou para nenhuma vaga.</p>
+            <Button asChild variant="link">
+              <Link href="/jobs">Buscar vagas</Link>
+            </Button>
           </div>
         )}
       </div>

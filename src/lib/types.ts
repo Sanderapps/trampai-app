@@ -21,8 +21,23 @@ export type Job = {
   dailyRate?: number;
   description: string;
   postedAt: Date | Timestamp | { seconds: number, nanoseconds: number };
+  employerId: string;
   contact?: {
     email: string;
     whatsapp: string;
   };
 };
+
+export type Application = {
+    id: string;
+    jobId: string;
+    jobTitle: string;
+    companyName: string;
+    candidateId: string;
+    candidateName: string;
+    candidateEmail: string;
+    resumeFileName: string;
+    coverLetter?: string;
+    appliedAt: Timestamp;
+    status: 'Em Análise' | 'Visualizado' | 'Rejeitado';
+}

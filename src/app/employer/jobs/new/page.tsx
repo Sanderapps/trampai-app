@@ -18,6 +18,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { companies } from '@/lib/data';
+import Link from 'next/link';
 
 const jobSchema = z.object({
   jobTitle: z.string().min(3, 'Título da vaga é obrigatório'),
@@ -35,7 +36,7 @@ type JobFormValues = z.infer<typeof jobSchema>;
 export default function NewJobPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm<JobFormValues>({
@@ -82,7 +83,9 @@ export default function NewJobPage() {
     }
 
     try {
-        const company = companies.find(c => c.id === '1'); // Mock: In a real app, get the employer's company
+        // In a real app, the employer would be linked to a company profile.
+        // For now, we mock finding a company for the logged-in user.
+        const company = companies[0]; 
         
         const jobData = {
             title: data.jobTitle,
@@ -110,10 +113,26 @@ export default function NewJobPage() {
         toast({
             variant: "destructive",
             title: "Erro ao publicar vaga",
-            description: "Não foi possível salvar a vaga no banco de dados.",
+            description: "Não foi possível salvar a vaga no banco de dados. Verifique suas permissões de escrita no Firestore.",
         });
     }
   };
+
+  if (authLoading) {
+    return <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">Carregando...</div>;
+  }
+
+  if (!user) {
+     return (
+        <div className="container mx-auto max-w-4xl px-4 py-12 text-center">
+            <h1 className='text-2xl font-bold'>Acesso Negado</h1>
+            <p className='text-muted-foreground mt-2'>Você precisa estar logado como empregador para publicar uma vaga.</p>
+            <Button asChild className='mt-4'>
+                <Link href="/login?redirect=/employer/jobs/new">Fazer Login</Link>
+            </Button>
+        </div>
+     )
+  }
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">

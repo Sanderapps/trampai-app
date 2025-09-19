@@ -1,3 +1,46 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-bg",
+      "description": "A panoramic view of Porto Alegre, the capital of Rio Grande do Sul.",
+      "imageUrl": "https://images.unsplash.com/photo-1604212134542-3a554a90583b?q=80&w=1920&auto=format&fit=crop",
+      "imageHint": "city skyline"
+    },
+    {
+      "id": "company-logo-1",
+      "description": "Abstract logo for a tech company.",
+      "imageUrl": "https://picsum.photos/seed/logo1/100/100",
+      "imageHint": "abstract logo"
+    },
+    {
+      "id": "company-logo-2",
+      "description": "Abstract logo for a retail company.",
+      "imageUrl": "https://picsum.photos/seed/logo2/100/100",
+      "imageHint": "geometric logo"
+    },
+    {
+      "id": "company-logo-3",
+      "description": "Abstract logo for a food service company.",
+      "imageUrl": "https://picsum.photos/seed/logo3/100/100",
+      "imageHint": "circle logo"
+    },
+    {
+      "id": "company-logo-4",
+      "description": "Abstract logo for a startup.",
+      "imageUrl": "https://picsum.photos/seed/logo4/100/100",
+      "imageHint": "modern logo"
+    },
+    {
+      "id": "company-logo-5",
+      "description": "Logo for a construction company.",
+      "imageUrl": "https://picsum.photos/seed/logo5/100/100",
+      "imageHint": "bold logo"
+    },
+    {
+      "id": "company-logo-6",
+      "description": "Logo for a creative agency.",
+      "imageUrl": "https://picsum.photos/seed/logo6/100/100",
+      "imageHint": "creative logo"
+    }
+  ]
 }

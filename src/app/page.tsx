@@ -59,18 +59,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col">
-      <section className="relative -mt-[var(--header-height)] flex min-h-[500px] flex-col justify-center">
-        <div className="absolute inset-0">
-          <Image
-            src="https://images.unsplash.com/photo-1604212134542-3a554a90583b?q=80&w=1920&auto=format&fit=crop"
-            alt="A panoramic view of Porto Alegre, the capital of Rio Grande do Sul."
-            fill
-            className="object-cover"
-            data-ai-hint="city skyline"
-            priority
-          />
-          <div className="absolute inset-0 bg-black/50" />
-        </div>
+      <section className="relative -mt-[var(--header-height)] flex min-h-[500px] flex-col justify-center bg-gradient-to-r from-primary to-secondary">
         <div className="relative mx-auto w-full max-w-7xl px-4 pt-[var(--header-height)] text-center text-primary-foreground sm:px-6 lg:px-8">
           <h1 className="font-headline text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
             Encontre seu próximo <span className="text-accent">trampo</span> no RS

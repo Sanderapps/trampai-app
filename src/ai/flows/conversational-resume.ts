@@ -4,9 +4,8 @@
  * @fileOverview A conversational AI agent to help candidates build their resume step-by-step.
  *
  * - conversationalResume - A function that drives the conversation for resume building.
- * - ConversationState - The schema for the state of the conversation.
- * - ProfileData - The schema for the final extracted profile data.
- * - ConversationMessage - The type for a single message in the conversation history.
+ * - ConversationalResumeInput - The input schema for the main flow, which is the conversation history
+ * - ConversationalResumeOutput - The output schema for the main flow, containing the next question and extracted data.
  */
 
 import { ai } from '@/ai/genkit';
@@ -15,13 +14,13 @@ import { z } from 'genkit';
 
 
 // Defines the input for the main flow, which is the conversation history
-const ConversationalResumeInputSchema = z.object({
+export const ConversationalResumeInputSchema = z.object({
   history: z.array(ConversationMessageSchema),
 });
 export type ConversationalResumeInput = z.infer<typeof ConversationalResumeInputSchema>;
 
 // Defines the output of the main flow
-const ConversationalResumeOutputSchema = z.object({
+export const ConversationalResumeOutputSchema = z.object({
     nextQuestion: z.string().describe("The next question for the AI to ask the user, or a final summary message."),
     isFinished: z.boolean().describe("A flag indicating if the conversation is complete and the profile is built."),
     profile: ProfileDataSchema.describe("The structured profile data collected so far."),
@@ -41,10 +40,13 @@ const prompt = ai.definePrompt({
 
 Sua tarefa é conduzir uma conversa para coletar as informações necessárias, fazendo UMA PERGUNTA DE CADA VEZ e preenchendo o objeto 'profile' com os dados coletados.
 
-Analise o histórico da conversa para entender em que parte do processo você está e quais informações já foram coletadas. O histórico é:
+Analise o histórico da conversa para entender em que parte do processo você está e quais informações já foram coletadas.
+{{#if history}}
+O histórico é:
 {{#each history}}
 - {{role}}: {{content}}
 {{/each}}
+{{/if}}
 
 Siga RIGOROSAMENTE esta ordem de perguntas, preenchendo o objeto 'profile' a cada passo:
 1.  Se o histórico estiver vazio, sua primeira resposta em 'nextQuestion' DEVE SER para dar as boas-vindas e pedir o NOME COMPLETO.
@@ -56,8 +58,8 @@ Siga RIGOROSAMENTE esta ordem de perguntas, preenchendo o objeto 'profile' a cad
     b. Pergunte o NOME DA EMPRESA.
     c. Pergunte a DATA DE INÍCIO (Mês/Ano).
     d. Pergunte a DATA DE TÉRMINO (Mês/Ano ou "Atual").
-    e. Após coletar uma experiência completa, pergunte: "Você tem mais alguma experiência para adicionar? Se não, digite 'não'".
-    f. Se a resposta for afirmativa, repita os passos de 'a' a 'd' para a nova experiência. Se for "não", siga para a próxima etapa.
+    e. Após coletar uma experiência completa, pergunte: "Você tem mais alguma experiência para adicionar? Se não, pode dizer 'não'".
+    f. Se a resposta for afirmativa, repita os passos de 'a' a 'd' para a nova experiência. Se for "não" ou algo semelhante, siga para a próxima etapa.
 
 5.  **FORMAÇÃO EDUCACIONAL (peça uma de cada vez):**
     a. Pergunte o nome do CURSO ou formação (ex: Ensino Médio, Gastronomia).
@@ -69,7 +71,7 @@ Siga RIGOROSAMENTE esta ordem de perguntas, preenchendo o objeto 'profile' a cad
 
 7.  **SOBRE VOCÊ:** Peça um breve RESUMO sobre o perfil profissional da pessoa.
 
-8.  **FINALIZAÇÃO:** Quando todas as informações forem coletadas, defina 'isFinished' como 'true' e forneça uma mensagem de conclusão em 'nextQuestion', como "Seu currículo está pronto! Estou salvando suas informações. Obrigado!".
+8.  **FINALIZAÇÃO:** Quando todas as informações forem coletadas, defina 'isFinished' como 'true' e forneça uma mensagem de conclusão em 'nextQuestion', como "Seu currículo está pronto! Estou salvando suas informações. Muito obrigado por conversar comigo!".
 
 REGRAS IMPORTANTES:
 - FAÇA APENAS UMA PERGUNTA POR VEZ.
@@ -104,3 +106,5 @@ const conversationalResumeFlow = ai.defineFlow(
     }
   }
 );
+
+    

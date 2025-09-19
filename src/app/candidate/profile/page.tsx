@@ -7,39 +7,43 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useForm, SubmitHandler, useFieldArray } from "react-hook-form";
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from "@/hooks/use-toast";
-import { Bot, Save, Send, Sparkles } from "lucide-react";
+import { Bot, PlusCircle, Save, Send, Sparkles, Trash2 } from "lucide-react";
 import { updateProfile } from "firebase/auth";
 import { db } from "@/lib/firebase/client";
 import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { conversationalResume } from "@/ai/flows/conversational-resume";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ConversationMessage, ProfileData, Experience, Education } from "@/lib/types";
+import { ConversationMessage, ProfileData } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 // Schema for the manual form
+const experienceSchema = z.object({
+      role: z.string().min(1, "Cargo é obrigatório"),
+      company: z.string().min(1, "Empresa é obrigatória"),
+      startDate: z.string(),
+      endDate: z.string(),
+});
+const educationSchema = z.object({
+      course: z.string().min(1, "Curso é obrigatório"),
+      institution: z.string().min(1, "Instituição é obrigatória"),
+      endDate: z.string(),
+});
+
+
 const profileSchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório.'),
   phone: z.string().optional(),
   location: z.string().optional(),
   summary: z.string().optional(),
   skills: z.string().optional(),
-  experiences: z.array(z.object({
-      role: z.string(),
-      company: z.string(),
-      startDate: z.string(),
-      endDate: z.string(),
-  })).optional(),
-  education: z.array(z.object({
-      course: z.string(),
-      institution: z.string(),
-      endDate: z.string(),
-  })).optional(),
+  experiences: z.array(experienceSchema).optional(),
+  education: z.array(educationSchema).optional(),
 });
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
@@ -64,6 +68,19 @@ export default function CandidateProfilePage() {
   // Form for manual editing
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
+    defaultValues: {
+      experiences: [],
+      education: [],
+    }
+  });
+
+  const { fields: expFields, append: appendExp, remove: removeExp } = useFieldArray({
+    control: profileForm.control,
+    name: "experiences",
+  });
+  const { fields: eduFields, append: appendEdu, remove: removeEdu } = useFieldArray({
+    control: profileForm.control,
+    name: "education",
   });
 
   // Form for AI chat
@@ -71,17 +88,35 @@ export default function CandidateProfilePage() {
     resolver: zodResolver(chatSchema),
   });
 
+  // Helper to safely parse JSON strings from Firestore
+  const safeJsonParse = (jsonString: string | undefined, fallback: any = []) => {
+    if (!jsonString) return fallback;
+    try {
+        return JSON.parse(jsonString);
+    } catch (e) {
+        console.warn("Failed to parse JSON, falling back.", e);
+        // If it fails to parse, it might be a plain string from a previous data structure.
+        // Return the fallback, or you could try to handle the plain string.
+        // For this case, we'll return the fallback and log the original value.
+        console.log("Original value:", jsonString);
+        return fallback;
+    }
+  };
+
   // Populate form with user data on load
   useEffect(() => {
     if (userProfile) {
+      const parsedExperiences = safeJsonParse(userProfile.experience, []);
+      const parsedEducation = safeJsonParse(userProfile.education, []);
+
       profileForm.reset({
         name: userProfile.displayName || '',
         phone: userProfile.phone || '',
         location: userProfile.location || '',
-        summary: userProfile.summary || '',
+        summary: userProfile.summary || (typeof userProfile.experience === 'string' && parsedExperiences.length === 0 ? userProfile.experience : ''), // Fallback for old data
         skills: userProfile.skills || '',
-        experiences: userProfile.experience ? JSON.parse(userProfile.experience) : [],
-        education: userProfile.education ? JSON.parse(userProfile.education) : [],
+        experiences: parsedExperiences,
+        education: parsedEducation,
       });
     }
   }, [userProfile, profileForm.reset]);
@@ -127,7 +162,17 @@ export default function CandidateProfilePage() {
         if (result.isFinished && result.profile) {
             toast({ title: 'Currículo criado!', description: 'A IA finalizou a criação do seu currículo. Salvando perfil...' });
             
-            await saveProfile(result.profile);
+            const profileToSave: ProfileFormValues = {
+              name: result.profile.name || '',
+              phone: result.profile.phone || '',
+              location: result.profile.location || '',
+              summary: result.profile.summary || '',
+              skills: result.profile.skills?.join(', ') || '',
+              experiences: result.profile.experiences || [],
+              education: result.profile.education || [],
+            }
+            await saveProfile(profileToSave);
+            profileForm.reset(profileToSave); // Update the form with AI data
 
             setConversation(prev => [...prev, { role: 'model', content: result.nextQuestion }]);
             setIsBuildingWithAI(false);
@@ -147,7 +192,7 @@ export default function CandidateProfilePage() {
   };
   
   // --- Manual Save Logic ---
-  const saveProfile = async (profileData: ProfileData | ProfileFormValues) => {
+  const saveProfile = async (profileData: ProfileFormValues) => {
     if (!user || !userProfile) {
         toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.' });
         return;
@@ -156,11 +201,6 @@ export default function CandidateProfilePage() {
     try {
         await updateProfile(user, { displayName: profileData.name });
         const userDocRef = doc(db, 'users', user.uid);
-        
-        const experiences = 'experiences' in profileData ? profileData.experiences : [];
-        const education = 'education' in profileData ? profileData.education : [];
-        const skills = 'skills' in profileData ? (Array.isArray(profileData.skills) ? profileData.skills.join(', ') : profileData.skills) : '';
-
 
         await setDoc(userDocRef, {
             ...userProfile,
@@ -168,9 +208,9 @@ export default function CandidateProfilePage() {
             phone: profileData.phone,
             location: profileData.location,
             summary: profileData.summary,
-            skills: skills,
-            experience: JSON.stringify(experiences),
-            education: JSON.stringify(education),
+            skills: profileData.skills,
+            experience: JSON.stringify(profileData.experiences || []),
+            education: JSON.stringify(profileData.education || []),
         }, { merge: true });
 
         await reloadUserData();
@@ -239,7 +279,73 @@ export default function CandidateProfilePage() {
                 </CardContent>
             </Card>
 
-             {/* TODO: Add Experience and Education manual fields */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Experiência Profissional</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {expFields.map((field, index) => (
+                  <div key={field.id} className="p-4 border rounded-md space-y-4 relative">
+                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                       <div className="space-y-2">
+                          <Label>Cargo</Label>
+                          <Input {...profileForm.register(`experiences.${index}.role`)} />
+                       </div>
+                        <div className="space-y-2">
+                          <Label>Empresa</Label>
+                          <Input {...profileForm.register(`experiences.${index}.company`)} />
+                       </div>
+                        <div className="space-y-2">
+                          <Label>Data de Início</Label>
+                          <Input placeholder="MM/AAAA" {...profileForm.register(`experiences.${index}.startDate`)} />
+                       </div>
+                        <div className="space-y-2">
+                          <Label>Data de Término</Label>
+                          <Input placeholder="MM/AAAA ou Atual" {...profileForm.register(`experiences.${index}.endDate`)} />
+                       </div>
+                     </div>
+                      <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeExp(index)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={() => appendExp({ role: '', company: '', startDate: '', endDate: '' })}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Experiência
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Formação Acadêmica</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {eduFields.map((field, index) => (
+                   <div key={field.id} className="p-4 border rounded-md space-y-4 relative">
+                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>Curso/Formação</Label>
+                          <Input {...profileForm.register(`education.${index}.course`)} />
+                       </div>
+                        <div className="space-y-2">
+                          <Label>Instituição</Label>
+                          <Input {...profileForm.register(`education.${index}.institution`)} />
+                       </div>
+                        <div className="sm:col-span-2 space-y-2">
+                          <Label>Ano de Conclusão</Label>
+                          <Input placeholder="Ex: 2020" {...profileForm.register(`education.${index}.endDate`)} />
+                       </div>
+                     </div>
+                     <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeEdu(index)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                  </div>
+                ))}
+                 <Button type="button" variant="outline" onClick={() => appendEdu({ course: '', institution: '', endDate: '' })}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Formação
+                </Button>
+              </CardContent>
+            </Card>
 
             <div className="flex justify-end">
                 <Button type="submit" disabled={profileForm.formState.isSubmitting}>
@@ -318,3 +424,5 @@ export default function CandidateProfilePage() {
     </div>
   );
 }
+
+    

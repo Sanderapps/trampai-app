@@ -140,9 +140,9 @@ export function JobCard({ job }: JobCardProps) {
     if (!job.benefits) return null;
 
     const benefitsMap = {
-      hasVT: 'Vale-transporte',
-      hasVR: 'Vale-refeição',
-      hasVA: 'Vale-alimentação',
+      hasVT: 'VT',
+      hasVR: 'VR',
+      hasVA: 'VA',
       hasHealthPlan: 'Plano de Saúde',
       hasCommission: 'Comissão',
     };
@@ -155,13 +155,11 @@ export function JobCard({ job }: JobCardProps) {
 
     if (available.length === 0 && !hasOthers) return null;
     
-    let benefitsToShow = available.slice(0, 3);
+    let benefitsToShow = available;
     
     let summary = benefitsToShow.join(', ');
 
-    if (available.length + (hasOthers ? 1 : 0) > 3) {
-      summary += '...';
-    } else if (hasOthers) {
+    if (hasOthers) {
        if(available.length > 0) {
          summary += `, ${job.benefits.others}`;
        } else {

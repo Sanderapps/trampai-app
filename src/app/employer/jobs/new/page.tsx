@@ -36,7 +36,7 @@ const jobSchema = z.object({
     hasVR: z.boolean().default(false),
     hasVA: z.boolean().default(false),
     hasHealthPlan: z.boolean().default(false),
-    others: z.string().optional(),
+    others: z.array(z.string()).max(5, "Você pode adicionar no máximo 5 benefícios personalizados.").optional(),
   }).default({}),
 });
 
@@ -57,7 +57,7 @@ export default function NewJobPage() {
         hasVR: false,
         hasVA: false,
         hasHealthPlan: false,
-        others: '',
+        others: [],
       },
     },
   });
@@ -127,9 +127,12 @@ export default function NewJobPage() {
             companyId: company?.id,
             companyName: company?.name,
             employerId: user.uid,
-            salary: (data.salaryMin && data.salaryMax) ? { min: data.salaryMin, max: data.salaryMax } : null,
+            salary: (data.salaryMin || data.salaryMax) ? { min: data.salaryMin || null, max: data.salaryMax || null } : null,
             dailyRate: data.dailyRate || null,
-            benefits: data.benefits,
+            benefits: {
+                ...data.benefits,
+                others: data.benefits.others?.filter(b => b.trim() !== '') || [], // Clean up empty strings
+            },
         };
 
         await addDoc(collection(db, 'jobs'), jobData);
@@ -265,8 +268,17 @@ export default function NewJobPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="benefits.others">Outros benefícios</Label>
-                <Input id="benefits.others" placeholder="Ex: 50% do plano, Auxílio-creche" {...register('benefits.others')} />
+                <Label>Outros benefícios (até 5)</Label>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {[...Array(5)].map((_, index) => (
+                    <Input
+                      key={index}
+                      placeholder={`Benefício ${index + 1}`}
+                      {...register(`benefits.others.${index}` as const)}
+                    />
+                  ))}
+                </div>
+                 {errors.benefits?.others && <p className="text-sm text-destructive">{errors.benefits.others.message}</p>}
               </div>
             </div>
 

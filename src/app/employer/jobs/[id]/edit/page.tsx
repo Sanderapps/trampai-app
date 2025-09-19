@@ -37,7 +37,7 @@ const jobSchema = z.object({
     hasVR: z.boolean().default(false),
     hasVA: z.boolean().default(false),
     hasHealthPlan: z.boolean().default(false),
-    others: z.string().optional(),
+    others: z.array(z.string()).max(5, "Você pode adicionar no máximo 5 benefícios personalizados.").optional(),
   }).default({}),
 });
 
@@ -62,7 +62,7 @@ export default function EditJobPage() {
         hasVR: false,
         hasVA: false,
         hasHealthPlan: false,
-        others: '',
+        others: [],
       },
     },
   });
@@ -91,8 +91,16 @@ export default function EditJobPage() {
                 if (data.dailyRate) {
                     setValue('dailyRate', data.dailyRate);
                 }
-                if (data.benefits) {
-                    setValue('benefits', data.benefits);
+                 if (data.benefits) {
+                    setValue('benefits.hasCommission', data.benefits.hasCommission);
+                    setValue('benefits.hasVT', data.benefits.hasVT);
+                    setValue('benefits.hasVR', data.benefits.hasVR);
+                    setValue('benefits.hasVA', data.benefits.hasVA);
+                    setValue('benefits.hasHealthPlan', data.benefits.hasHealthPlan);
+                    // Ensure 'others' is an array of 5, padding with empty strings if necessary
+                    const others = data.benefits.others || [];
+                    const paddedOthers = Array.from({ length: 5 }, (_, i) => others[i] || '');
+                    setValue('benefits.others', paddedOthers);
                 }
             } else {
                 notFound();
@@ -173,7 +181,10 @@ export default function EditJobPage() {
             keywords: data.keywords.split(',').map(k => k.trim()),
             salary: (data.salaryMin || data.salaryMax) ? { min: data.salaryMin || null, max: data.salaryMax || null } : null,
             dailyRate: data.dailyRate || null,
-            benefits: data.benefits,
+            benefits: {
+                ...data.benefits,
+                others: data.benefits.others?.filter(b => b.trim() !== '') || [], // Clean up empty strings
+            },
         };
 
         await updateDoc(jobDocRef, jobData);
@@ -292,29 +303,38 @@ export default function EditJobPage() {
               <Label>Benefícios</Label>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                 <div className="flex items-center space-x-2">
-                  <Checkbox id="hasCommission" {...register('benefits.hasCommission')} onCheckedChange={(checked) => setValue('benefits.hasCommission', !!checked)} checked={watch('benefits.hasCommission')} />
+                  <Checkbox id="hasCommission" onCheckedChange={(checked) => setValue('benefits.hasCommission', !!checked)} checked={watch('benefits.hasCommission')} />
                   <Label htmlFor="hasCommission">Comissão</Label>
                 </div>
                  <div className="flex items-center space-x-2">
-                  <Checkbox id="hasVT" {...register('benefits.hasVT')} onCheckedChange={(checked) => setValue('benefits.hasVT', !!checked)} checked={watch('benefits.hasVT')} />
+                  <Checkbox id="hasVT" onCheckedChange={(checked) => setValue('benefits.hasVT', !!checked)} checked={watch('benefits.hasVT')} />
                   <Label htmlFor="hasVT">Vale-transporte (VT)</Label>
                 </div>
                  <div className="flex items-center space-x-2">
-                  <Checkbox id="hasVR" {...register('benefits.hasVR')} onCheckedChange={(checked) => setValue('benefits.hasVR', !!checked)} checked={watch('benefits.hasVR')} />
+                  <Checkbox id="hasVR" onCheckedChange={(checked) => setValue('benefits.hasVR', !!checked)} checked={watch('benefits.hasVR')} />
                   <Label htmlFor="hasVR">Vale-refeição (VR)</Label>
                 </div>
                  <div className="flex items-center space-x-2">
-                  <Checkbox id="hasVA" {...register('benefits.hasVA')} onCheckedChange={(checked) => setValue('benefits.hasVA', !!checked)} checked={watch('benefits.hasVA')} />
+                  <Checkbox id="hasVA" onCheckedChange={(checked) => setValue('benefits.hasVA', !!checked)} checked={watch('benefits.hasVA')} />
                   <Label htmlFor="hasVA">Vale-alimentação (VA)</Label>
                 </div>
                  <div className="flex items-center space-x-2">
-                  <Checkbox id="hasHealthPlan" {...register('benefits.hasHealthPlan')} onCheckedChange={(checked) => setValue('benefits.hasHealthPlan', !!checked)} checked={watch('benefits.hasHealthPlan')} />
+                  <Checkbox id="hasHealthPlan" onCheckedChange={(checked) => setValue('benefits.hasHealthPlan', !!checked)} checked={watch('benefits.hasHealthPlan')} />
                   <Label htmlFor="hasHealthPlan">Plano de Saúde</Label>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="benefits.others">Outros benefícios</Label>
-                <Input id="benefits.others" placeholder="Ex: 50% do plano, Auxílio-creche" {...register('benefits.others')} />
+               <div className="space-y-2">
+                <Label>Outros benefícios (até 5)</Label>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {[...Array(5)].map((_, index) => (
+                    <Input
+                      key={index}
+                      placeholder={`Benefício ${index + 1}`}
+                      {...register(`benefits.others.${index}` as const)}
+                    />
+                  ))}
+                </div>
+                 {errors.benefits?.others && <p className="text-sm text-destructive">{errors.benefits.others.message}</p>}
               </div>
             </div>
 

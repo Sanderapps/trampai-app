@@ -151,20 +151,16 @@ export function JobCard({ job }: JobCardProps) {
       .filter(([key, value]) => value === true && key in benefitsMap)
       .map(([key]) => benefitsMap[key as keyof typeof benefitsMap]);
     
-    const hasOthers = job.benefits.others && job.benefits.others.trim() !== '';
-
-    if (available.length === 0 && !hasOthers) return null;
+    const otherBenefits = job.benefits.others?.filter(b => b && b.trim() !== '') || [];
     
-    let benefitsToShow = available;
-    
-    let summary = benefitsToShow.join(', ');
+    const allBenefits = [...available, ...otherBenefits];
 
-    if (hasOthers) {
-       if(available.length > 0) {
-         summary += `, ${job.benefits.others}`;
-       } else {
-         summary = job.benefits.others!;
-       }
+    if (allBenefits.length === 0) return null;
+    
+    let summary = allBenefits.slice(0, 3).join(', ');
+
+    if (allBenefits.length > 3) {
+      summary += '...';
     }
     
     // Truncate if still too long
@@ -225,8 +221,8 @@ export function JobCard({ job }: JobCardProps) {
           <span>{formatSalary(job)}</span>
         </div>
         {benefitsSummary && (
-          <div className="flex items-center gap-2">
-            <Gift className="h-4 w-4" />
+          <div className="flex items-start gap-2">
+            <Gift className="h-4 w-4 shrink-0 mt-0.5" />
             <span>{benefitsSummary}</span>
           </div>
         )}

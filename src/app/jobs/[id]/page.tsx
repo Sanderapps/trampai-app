@@ -122,7 +122,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
   }
   
   const benefitList = job.benefits ? Object.entries(job.benefits)
-    .filter(([key, value]) => value === true)
+    .filter(([key, value]) => value === true && key !== 'others')
     .map(([key]) => {
         switch(key) {
             case 'hasCommission': return 'Comissão';
@@ -132,9 +132,12 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
             case 'hasHealthPlan': return 'Plano de Saúde';
             default: return null;
         }
-    }).filter(Boolean) : [];
+    }).filter(Boolean) as string[] : [];
 
-  const hasBenefits = benefitList.length > 0 || (job.benefits?.others && job.benefits.others.length > 0);
+    const otherBenefits = job.benefits?.others?.filter(b => b.trim() !== '') || [];
+    const allBenefits = [...benefitList, ...otherBenefits];
+
+    const hasBenefits = allBenefits.length > 0;
 
 
   return (
@@ -190,18 +193,12 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
                             </CardHeader>
                             <CardContent>
                                 <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                    {benefitList.map(benefit => (
+                                    {allBenefits.map(benefit => (
                                         <li key={benefit} className="flex items-center gap-2">
                                             <Check className="h-4 w-4 text-green-500" />
                                             <span>{benefit}</span>
                                         </li>
                                     ))}
-                                    {job.benefits?.others && (
-                                        <li className="flex items-center gap-2">
-                                            <Check className="h-4 w-4 text-green-500" />
-                                            <span>{job.benefits.others}</span>
-                                        </li>
-                                    )}
                                 </ul>
                             </CardContent>
                         </Card>

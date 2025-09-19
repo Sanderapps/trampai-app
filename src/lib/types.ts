@@ -34,7 +34,7 @@ export type Job = {
     hasVR: boolean;
     hasVA: boolean;
     hasHealthPlan: boolean;
-    others?: string;
+    others?: string[];
   };
 };
 

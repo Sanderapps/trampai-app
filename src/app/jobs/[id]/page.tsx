@@ -229,8 +229,8 @@ export default function JobDetailsPage() {
 
                     <Card>
                         <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-                            <Avatar className="h-14 w-14 border flex items-center justify-center bg-muted">
-                                <LogoIcon className="h-8 w-8 text-muted-foreground" />
+                             <Avatar className="flex h-14 w-14 items-center justify-center rounded-lg border bg-card">
+                                <LogoIcon className="h-8 w-8 text-foreground" />
                             </Avatar>
                             <div>
                                 <CardTitle className="text-base font-bold">Empresa Confidencial</CardTitle>

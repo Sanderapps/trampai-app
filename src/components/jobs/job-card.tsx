@@ -110,8 +110,8 @@ export function JobCard({ job }: JobCardProps) {
   return (
     <Card className="flex h-full flex-col overflow-hidden transition-shadow hover:shadow-lg">
       <CardHeader className="flex flex-row items-start gap-4">
-        <Avatar className="h-14 w-14 border flex items-center justify-center bg-muted">
-            <LogoIcon className="h-8 w-8 text-muted-foreground" />
+        <Avatar className="flex h-14 w-14 items-center justify-center rounded-lg border bg-card">
+            <LogoIcon className="h-8 w-8 text-foreground" />
         </Avatar>
         <div className="flex-grow">
           <CardTitle className="text-lg font-bold">

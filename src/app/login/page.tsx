@@ -114,9 +114,6 @@ export default function LoginPage() {
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Entrando...' : 'Entrar'}
             </Button>
-            <Button variant="outline" className="w-full" type="button">
-              Entrar com Google
-            </Button>
           </form>
           <div className="mt-4 text-center text-sm">
             Não tem uma conta?{' '}

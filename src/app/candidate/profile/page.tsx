@@ -302,7 +302,6 @@ export default function CandidateProfilePage() {
              <div className="sm:col-span-2 space-y-2">
               <Label htmlFor="linkedinUrl">LinkedIn (Opcional)</Label>
               <Input id="linkedinUrl" type="text" placeholder="linkedin.com/in/seu-perfil" {...register("linkedinUrl")} />
-              {errors.linkedinUrl && <p className="text-sm text-destructive">{errors.linkedinUrl.message}</p>}
             </div>
           </CardContent>
         </Card>

@@ -1,6 +1,6 @@
 
 import Link from 'next/link';
-import { Briefcase, Twitter, Facebook, Linkedin } from 'lucide-react';
+import { Briefcase } from 'lucide-react';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -17,20 +17,6 @@ export function Footer() {
             <p className="text-sm text-muted-foreground">
               Conectando talentos e empresas no Rio Grande do Sul.
             </p>
-            <div className="flex space-x-6">
-              <Link href="#" className="text-muted-foreground hover:text-foreground">
-                <span className="sr-only">Facebook</span>
-                <Facebook className="h-6 w-6" />
-              </Link>
-              <Link href="#" className="text-muted-foreground hover:text-foreground">
-                <span className="sr-only">Twitter</span>
-                <Twitter className="h-6 w-6" />
-              </Link>
-              <Link href="#" className="text-muted-foreground hover:text-foreground">
-                <span className="sr-only">LinkedIn</span>
-                <Linkedin className="h-6 w-6" />
-              </Link>
-            </div>
           </div>
           <div className="mt-12 grid grid-cols-2 gap-8 xl:col-span-2 xl:mt-0">
             <div className="md:grid md:grid-cols-2 md:gap-8">

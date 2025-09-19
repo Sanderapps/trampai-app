@@ -138,9 +138,6 @@ export default function SignupPage() {
             <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? 'Criando conta...' : 'Criar conta'}
             </Button>
-            <Button variant="outline" className="w-full" type="button">
-                Cadastrar com Google
-            </Button>
             </form>
             <div className="mt-4 text-center text-sm">
             Já tem uma conta?{' '}

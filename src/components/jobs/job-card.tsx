@@ -130,7 +130,7 @@ export function JobCard({ job }: JobCardProps) {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="shrink-0" onClick={handleSaveJob}>
-                <Heart className={`h-5 w-5 ${isSaved ? 'fill-primary text-primary' : ''}`} />
+                <Heart className={`h-5 w-5 ${isSaved ? 'fill-destructive text-destructive' : ''}`} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>

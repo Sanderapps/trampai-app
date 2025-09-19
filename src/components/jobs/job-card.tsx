@@ -151,8 +151,11 @@ export function JobCard({ job }: JobCardProps) {
       .filter(([key, value]) => value === true && key in benefitsMap)
       .map(([key]) => benefitsMap[key as keyof typeof benefitsMap]);
     
-    const otherBenefits = job.benefits.others?.filter(b => b && b.trim() !== '') || [];
-    
+    // Ensure `others` is treated as an array
+    const otherBenefitsRaw = job.benefits.others || [];
+    const otherBenefits = (Array.isArray(otherBenefitsRaw) ? otherBenefitsRaw : Object.values(otherBenefitsRaw))
+                           .filter(b => b && typeof b === 'string' && b.trim() !== '');
+
     const allBenefits = [...available, ...otherBenefits];
 
     if (allBenefits.length === 0) return null;

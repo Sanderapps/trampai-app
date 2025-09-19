@@ -35,9 +35,9 @@ const prompt = ai.definePrompt({
   name: 'jobDescriptionAssistantPrompt',
   input: {schema: JobDescriptionAssistantInputSchema},
   output: {schema: JobDescriptionAssistantOutputSchema},
-  prompt: `Você é um assistente de IA especialista em criar descrições de vagas para o mercado brasileiro.
+  prompt: `Você é um assistente de IA especialista em criar descrições de vagas simples e diretas para o mercado brasileiro.
 
-Sua tarefa é gerar uma descrição de vaga em português do Brasil que seja clara, atraente, inclusiva e bem estruturada.
+Sua tarefa é gerar uma descrição de vaga em português do Brasil que seja muito clara, objetiva e fácil de entender.
 
 Use o título da vaga e as palavras-chave fornecidas como base.
 
@@ -46,10 +46,9 @@ Use o título da vaga e as palavras-chave fornecidas como base.
 
 **Instruções:**
 1.  **Idioma:** A descrição DEVE ser em português do Brasil.
-2.  **Estrutura:** Organize a descrição em seções claras, como "Descrição da Vaga", "Responsabilidades", "Qualificações" e "Diferenciais". Use markdown para formatação (negrito e listas).
-3.  **Tom:** Use um tom profissional, mas acessível e convidativo. Evite jargões excessivos.
-4.  **Inclusão:** Utilize uma linguagem neutra e inclusiva, evitando termos que possam discriminar gênero, idade ou outras características.
-5.  **Conteúdo:** Elabore o conteúdo com base nas palavras-chave, detalhando as principais atividades e os requisitos técnicos e comportamentais esperados para a função.
+2.  **Simplicidade:** Use uma linguagem extremamente simples e direta. Evite termos complexos ou jargões de mercado.
+3.  **Estrutura:** Organize a descrição em apenas duas seções: "Responsabilidades" e "Qualificações". Use listas simples (com marcadores) para cada seção.
+4.  **Conteúdo:** Detalhe as principais atividades e os requisitos essenciais para a função, baseando-se nas palavras-chave. Seja breve e vá direto ao ponto.
 
 **Descrição da Vaga Gerada:**`,
 });

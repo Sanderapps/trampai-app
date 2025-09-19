@@ -77,7 +77,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
                             </div>
                              <div className="mt-4 flex flex-wrap gap-2">
                                 <Badge variant="secondary">{job.type}</Badge>
-                                <Badge variant="secondary">{job.level}</Badge>
+                                {job.level && <Badge variant="secondary">{job.level}</Badge>}
                             </div>
                         </CardHeader>
                         <CardContent>

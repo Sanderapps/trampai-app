@@ -64,7 +64,7 @@ export function JobCard({ job }: JobCardProps) {
           </CardDescription>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge variant="secondary">{job.type}</Badge>
-            <Badge variant="secondary">{job.level}</Badge>
+            {job.level && <Badge variant="secondary">{job.level}</Badge>}
           </div>
         </div>
         <TooltipProvider>

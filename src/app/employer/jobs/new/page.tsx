@@ -21,7 +21,7 @@ const jobSchema = z.object({
   jobDescription: z.string().min(50, 'Descrição da vaga é obrigatória'),
   location: z.string().min(3, 'Localização é obrigatória'),
   type: z.string({ required_error: 'Tipo de contrato é obrigatório' }),
-  level: z.string({ required_error: 'Nível de experiência é obrigatório' }),
+  level: z.string().optional(),
   salaryMin: z.coerce.number().optional(),
   salaryMax: z.coerce.number().optional(),
 });
@@ -113,7 +113,7 @@ export default function NewJobPage() {
               {errors.jobDescription && <p className="text-sm text-destructive">{errors.jobDescription.message}</p>}
             </div>
             
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="location">Localização</Label>
                 <Input id="location" placeholder="Ex: Porto Alegre, RS ou Remoto" {...register('location')} />
@@ -133,20 +133,6 @@ export default function NewJobPage() {
                   </SelectContent>
                 </Select>
                  {errors.type && <p className="text-sm text-destructive">{errors.type.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Nível de Experiência</Label>
-                <Select onValueChange={(value) => setValue('level', value, { shouldValidate: true })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Júnior">Júnior</SelectItem>
-                    <SelectItem value="Pleno">Pleno</SelectItem>
-                    <SelectItem value="Sênior">Sênior</SelectItem>
-                  </SelectContent>
-                </Select>
-                 {errors.level && <p className="text-sm text-destructive">{errors.level.message}</p>}
               </div>
             </div>
 

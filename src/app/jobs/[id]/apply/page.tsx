@@ -7,9 +7,7 @@ import { z } from 'zod';
 import Link from 'next/link';
 import { ArrowLeft, Upload } from 'lucide-react';
 import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useEffect, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -18,19 +16,34 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Job } from '@/lib/types';
-import { db, storage } from '@/lib/firebase/client';
+import { db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/auth-context';
+
+const MAX_FILE_SIZE = 700 * 1024; // 700 KB
 
 const applySchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório'),
   email: z.string().email('E-mail inválido'),
   phone: z.string().optional(),
-  resume: z.any().refine(files => files?.length > 0, 'Currículo é obrigatório.'),
+  resume: z.any()
+    .refine(files => files?.length > 0, 'Currículo é obrigatório.')
+    .refine(files => files?.[0]?.size <= MAX_FILE_SIZE, `O arquivo do currículo deve ter no máximo 700KB.`),
   coverLetter: z.string().optional(),
 });
 
 type ApplyFormValues = z.infer<typeof applySchema>;
+
+// Helper function to convert file to Base64
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = error => reject(error);
+    });
+};
+
 
 export default function ApplyPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -84,12 +97,9 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
 
     try {
         const resumeFile = data.resume[0] as File;
-        const uniqueFileName = `${uuidv4()}-${resumeFile.name}`;
-        const storageRef = ref(storage, `resumes/${user.uid}/${job.id}/${uniqueFileName}`);
         
-        toast({ title: 'Enviando currículo...', description: 'Aguarde um momento.'});
-        await uploadBytes(storageRef, resumeFile);
-        const resumeUrl = await getDownloadURL(storageRef);
+        toast({ title: 'Processando currículo...', description: 'Aguarde um momento.'});
+        const base64Resume = await fileToBase64(resumeFile);
         
         const applicationData = {
             jobId: job.id,
@@ -98,7 +108,11 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
             candidateId: user.uid,
             candidateName: data.name,
             candidateEmail: data.email,
-            resumeUrl: resumeUrl,
+            resumeFile: {
+                name: resumeFile.name,
+                type: resumeFile.type,
+                data: base64Resume,
+            },
             coverLetter: data.coverLetter || '',
             appliedAt: serverTimestamp(),
             status: 'Em Análise',
@@ -116,7 +130,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
         toast({
             variant: "destructive",
             title: "Erro ao enviar candidatura",
-            description: "Não foi possível salvar sua candidatura. Verifique as regras de segurança do Firebase Storage.",
+            description: "Não foi possível salvar sua candidatura. Verifique se o arquivo não é muito grande e tente novamente.",
         });
     }
   };
@@ -179,7 +193,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
               <Input id="phone" type="tel" {...register('phone')} />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="resume">Currículo (PDF, DOC, DOCX)</Label>
+                <Label htmlFor="resume">Currículo (PDF, DOC, DOCX - máx 700KB)</Label>
                 <div className="flex items-center justify-center w-full">
                     <Label htmlFor="resume" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">

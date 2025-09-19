@@ -60,6 +60,18 @@ export default function ApplicantsPage({ params }: { params: { id: string } }) {
       return new Timestamp(timestamp.seconds, timestamp.nanoseconds).toDate().toLocaleDateString('pt-BR');
   }
 
+  const handleDownload = (app: Application) => {
+    if (!app.resumeFile) return;
+
+    const link = document.createElement('a');
+    link.href = app.resumeFile.data;
+    link.download = app.resumeFile.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
   if (loading || authLoading) {
     return (
       <div className="container mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
@@ -122,11 +134,14 @@ export default function ApplicantsPage({ params }: { params: { id: string } }) {
                     <TableCell className="hidden sm:table-cell">{getAppliedDate(app.appliedAt)}</TableCell>
                     <TableCell className="hidden md:table-cell"><Badge>{app.status}</Badge></TableCell>
                     <TableCell className="text-right">
-                       <Button asChild variant="outline" size="sm">
-                          <a href={app.resumeUrl} target="_blank" rel="noopener noreferrer">
-                             <Download className="mr-2 h-4 w-4"/>
-                             Baixar
-                          </a>
+                       <Button 
+                          variant="outline" 
+                          size="sm"
+                          disabled={!app.resumeFile}
+                          onClick={() => handleDownload(app)}
+                        >
+                          <Download className="mr-2 h-4 w-4"/>
+                          Baixar
                        </Button>
                     </TableCell>
                   </TableRow>

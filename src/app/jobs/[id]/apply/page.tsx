@@ -2,11 +2,11 @@
 'use client';
 
 import { notFound, useRouter, useParams } from 'next/navigation';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { ArrowLeft, Upload, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Upload, CheckCircle, File as FileIcon, X } from 'lucide-react';
 import { addDoc, collection, doc, getDoc, serverTimestamp, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 
@@ -22,6 +22,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/auth-context';
 
 const MAX_FILE_SIZE = 700 * 1024; // 700 KB
+const ACCEPTED_FILE_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain',
+  'application/rtf'
+];
 
 const applySchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório'),
@@ -29,8 +36,12 @@ const applySchema = z.object({
   phone: z.string().min(10, "Telefone é obrigatório."),
   socialUrl: z.string().url("Por favor, insira uma URL válida.").optional().or(z.literal('')),
   resume: z.any()
-    .refine(files => files?.length > 0, 'Currículo é obrigatório.')
-    .refine(files => files?.[0]?.size <= MAX_FILE_SIZE, `O arquivo do currículo deve ter no máximo 700KB.`),
+    .refine((files) => files?.[0], 'Currículo é obrigatório.')
+    .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, `O arquivo do currículo deve ter no máximo ${MAX_FILE_SIZE / 1024}KB.`)
+    .refine(
+      (files) => ACCEPTED_FILE_TYPES.includes(files?.[0]?.type),
+      'Formato de arquivo inválido. Apenas PDF, DOC, DOCX, TXT ou RTF são permitidos.'
+    ),
   coverLetter: z.string().optional(),
 });
 
@@ -57,10 +68,12 @@ export default function ApplyPage() {
   const [loading, setLoading] = useState(true);
   const [checkingStatus, setCheckingStatus] = useState(true);
   const [existingApplication, setExistingApplication] = useState<Application | null>(null);
-
-  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue } = useForm<ApplyFormValues>({
+  
+  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, control, watch } = useForm<ApplyFormValues>({
     resolver: zodResolver(applySchema),
   });
+
+  const selectedFile = watch('resume')?.[0];
 
   useEffect(() => {
     if (user && userProfile) {
@@ -264,17 +277,55 @@ export default function ApplyPage() {
                 </div>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="resume">Currículo (PDF, DOC, DOCX - máx 700KB)</Label>
-                <div className="flex items-center justify-center w-full">
-                    <Label htmlFor="resume" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
-                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Clique para enviar</span> ou arraste e solte</p>
+              <Label htmlFor="resume">Currículo (PDF, DOC, DOCX - máx 700KB)</Label>
+              <Controller
+                control={control}
+                name="resume"
+                render={({ field: { onChange, onBlur, name, ref } }) => (
+                  <div>
+                    {!selectedFile ? (
+                      <div className="flex items-center justify-center w-full">
+                          <Label htmlFor="resume" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
+                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                  <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
+                                  <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Clique para enviar</span> ou arraste e solte</p>
+                              </div>
+                              <Input 
+                                id="resume" 
+                                type="file" 
+                                className="hidden" 
+                                onBlur={onBlur}
+                                name={name}
+                                ref={ref}
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files.length > 0) {
+                                    onChange(e.target.files);
+                                  }
+                                }}
+                                accept={ACCEPTED_FILE_TYPES.join(',')} 
+                              />
+                          </Label>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between w-full h-32 px-4 border-2 border-dashed rounded-lg bg-muted">
+                        <div className='flex items-center gap-3'>
+                          <FileIcon className='h-8 w-8 text-primary'/>
+                          <span className='text-sm font-medium text-foreground truncate'>{selectedFile.name}</span>
                         </div>
-                        <Input id="resume" type="file" className="hidden" {...register('resume')} accept=".pdf,.doc,.docx,.rtf,.txt" />
-                    </Label>
-                </div> 
-                {errors.resume && <p className="text-sm text-destructive">{typeof errors.resume.message === 'string' ? errors.resume.message : 'Erro no arquivo'}</p>}
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => setValue('resume', null, { shouldValidate: true })}
+                        >
+                          <X className='h-5 w-5'/>
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              />
+              {errors.resume && <p className="text-sm text-destructive">{typeof errors.resume.message === 'string' ? errors.resume.message : 'Erro no arquivo'}</p>}
             </div>
              <div className="space-y-2">
               <Label htmlFor="coverLetter">Carta de Apresentação (Opcional)</Label>
@@ -289,5 +340,7 @@ export default function ApplyPage() {
     </div>
   );
 }
+
+    
 
     

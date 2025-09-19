@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar } from '@/components/ui/avatar';
 import {
   Tooltip,
   TooltipContent,
@@ -111,7 +111,7 @@ export function JobCard({ job }: JobCardProps) {
     <Card className="flex h-full flex-col overflow-hidden transition-shadow hover:shadow-lg">
       <CardHeader className="flex flex-row items-start gap-4">
         <Avatar className="flex h-14 w-14 items-center justify-center rounded-lg border bg-card">
-            <LogoIcon className="h-8 w-8 text-foreground" />
+            <LogoIcon className="h-8 w-8 text-primary" />
         </Avatar>
         <div className="flex-grow">
           <CardTitle className="text-lg font-bold">
@@ -120,7 +120,7 @@ export function JobCard({ job }: JobCardProps) {
             </Link>
           </CardTitle>
           <CardDescription className="text-sm">
-            Empresa Confidencial
+            {job.companyName}
           </CardDescription>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge variant="secondary">{job.type}</Badge>

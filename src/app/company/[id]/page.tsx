@@ -3,7 +3,6 @@
 import { notFound, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 
@@ -45,7 +44,9 @@ export default function CompanyProfilePage() {
           orderBy('postedAt', 'desc')
         );
         const jobSnapshot = await getDocs(q);
-        const jobList = jobSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
+        const jobList = jobSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as Job))
+            .filter(job => job.status !== 'Fechada');
         setJobs(jobList);
       } catch (error) {
         console.error("Error fetching company jobs:", error);
@@ -84,7 +85,7 @@ export default function CompanyProfilePage() {
 
         <div className="flex flex-col items-center gap-6 sm:flex-row">
             <Avatar className="h-24 w-24 border flex items-center justify-center bg-card">
-                <LogoIcon className="h-12 w-12 text-foreground" />
+                <LogoIcon className="h-12 w-12 text-primary" />
             </Avatar>
             <div>
                  <h1 className="font-headline text-3xl font-bold">{company.name}</h1>
@@ -98,11 +99,7 @@ export default function CompanyProfilePage() {
                  <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                     {[...Array(3)].map((_, i) => (
                         <div key={i} className="flex flex-col space-y-3">
-                            <Skeleton className="h-[125px] w-full rounded-xl" />
-                            <div className="space-y-2">
-                                <Skeleton className="h-4 w-[250px]" />
-                                <Skeleton className="h-4 w-[200px]" />
-                            </div>
+                            <Skeleton className="h-[250px] w-full rounded-xl" />
                         </div>
                     ))}
                 </div>

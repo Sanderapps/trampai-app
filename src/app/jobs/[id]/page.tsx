@@ -122,8 +122,10 @@ export default function JobDetailsPage() {
   };
 
   const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    toast({ title: "Link copiado!", description: "O link da vaga foi copiado para sua área de transferência." });
+    if (typeof window !== 'undefined') {
+        navigator.clipboard.writeText(window.location.href);
+        toast({ title: "Link copiado!", description: "O link da vaga foi copiado para sua área de transferência." });
+    }
   }
 
 
@@ -178,7 +180,7 @@ export default function JobDetailsPage() {
                                 <div>
                                     <CardTitle className="text-2xl font-bold">{job.title}</CardTitle>
                                     <CardDescription className="mt-2 flex items-center gap-2 text-sm">
-                                        <Building className="h-4 w-4" /> Empresa Confidencial
+                                        <Building className="h-4 w-4" /> {job.companyName}
                                     </CardDescription>
                                 </div>
                                 <div className="flex gap-2">
@@ -233,10 +235,13 @@ export default function JobDetailsPage() {
                     <Card>
                         <CardHeader className="flex flex-row items-center gap-4 space-y-0">
                              <Avatar className="flex h-14 w-14 items-center justify-center rounded-lg border bg-card">
-                                <LogoIcon className="h-8 w-8 text-foreground" />
+                                <LogoIcon className="h-8 w-8 text-primary" />
                             </Avatar>
                             <div>
-                                <CardTitle className="text-base font-bold">Empresa Confidencial</CardTitle>
+                                <CardTitle className="text-base font-bold">{job.companyName}</CardTitle>
+                                <Button variant="link" asChild className="p-0 h-auto">
+                                    <Link href={`/company/${company.id}`}>Ver perfil da empresa</Link>
+                                </Button>
                             </div>
                         </CardHeader>
                     </Card>

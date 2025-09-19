@@ -70,6 +70,7 @@ export type UserProfile = {
   summary?: string;
   photoURL?: string;
   birthDate?: string;
+  isFirstJob?: boolean;
 }
 
     

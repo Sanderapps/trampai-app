@@ -6,17 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
-import { useEffect, useState, useRef } from "react";
+import { useEffect } from "react";
 import { useForm, SubmitHandler, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from "@/hooks/use-toast";
-import { Bot, CalendarIcon, PlusCircle, Save, Send, Sparkles, Trash2 } from "lucide-react";
+import { CalendarIcon, PlusCircle, Save, Trash2 } from "lucide-react";
 import { updateProfile } from "firebase/auth";
 import { db } from "@/lib/firebase/client";
 import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -24,7 +23,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
-
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Schema for the manual form
 const experienceSchema = z.object({
@@ -45,6 +44,7 @@ const profileSchema = z.object({
   birthDate: z.date().optional(),
   phone: z.string().optional(),
   location: z.string().optional(),
+  isFirstJob: z.boolean().default(false),
   experiences: z.array(experienceSchema).optional(),
   education: z.array(educationSchema).optional(),
   summary: z.string().optional(),
@@ -63,10 +63,11 @@ export default function CandidateProfilePage() {
     defaultValues: {
       experiences: [],
       education: [],
+      isFirstJob: false,
     }
   });
 
-  const { fields: expFields, append: appendExp, remove: removeExp } = useFieldArray({
+  const { fields: expFields, append: appendExp, remove: removeExp, replace: replaceExp } = useFieldArray({
     control: profileForm.control,
     name: "experiences",
   });
@@ -74,17 +75,24 @@ export default function CandidateProfilePage() {
     control: profileForm.control,
     name: "education",
   });
+  
+  const isFirstJob = profileForm.watch('isFirstJob');
+
+  useEffect(() => {
+    if (isFirstJob) {
+      replaceExp([]);
+    }
+  }, [isFirstJob, replaceExp]);
 
   // Helper to safely parse JSON strings from Firestore
   const safeJsonParse = (jsonString: string | undefined | null, fallback: any = []) => {
     if (!jsonString) return fallback;
     try {
-        // If it's already an object (from previous state updates), return it
         if (typeof jsonString === 'object' && jsonString !== null) return jsonString;
-        return JSON.parse(jsonString);
+        const parsed = JSON.parse(jsonString);
+        return Array.isArray(parsed) ? parsed : fallback;
     } catch (e) {
         console.warn("Falling back to empty array for JSON parsing.", e);
-        // If parsing fails, it's likely not a JSON string, so we can't process it.
         return fallback;
     }
   };
@@ -98,6 +106,7 @@ export default function CandidateProfilePage() {
         birthDate: userProfile.birthDate ? new Date(userProfile.birthDate) : undefined,
         phone: userProfile.phone || '',
         location: userProfile.location || '',
+        isFirstJob: userProfile.isFirstJob || false,
         experiences: safeJsonParse(userProfile.experience, []),
         education: safeJsonParse(userProfile.education, []),
         summary: userProfile.summary || '',
@@ -129,7 +138,8 @@ export default function CandidateProfilePage() {
             birthDate: profileData.birthDate?.toISOString(),
             phone: profileData.phone,
             location: profileData.location,
-            experience: JSON.stringify(profileData.experiences || []),
+            isFirstJob: profileData.isFirstJob,
+            experience: profileData.isFirstJob ? '[]' : JSON.stringify(profileData.experiences || []),
             education: JSON.stringify(profileData.education || []),
             summary: profileData.summary || '',
         }, { merge: true });
@@ -231,34 +241,53 @@ export default function CandidateProfilePage() {
                 <CardTitle>Experiência Profissional</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {expFields.map((field, index) => (
-                  <div key={field.id} className="p-4 border rounded-md space-y-4 relative">
-                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                       <div className="space-y-2">
-                          <Label>Cargo</Label>
-                          <Input {...profileForm.register(`experiences.${index}.role`)} />
-                       </div>
+                 <div className="flex items-center space-x-2">
+                    <Controller
+                        control={profileForm.control}
+                        name="isFirstJob"
+                        render={({ field }) => (
+                            <Checkbox
+                                id="isFirstJob"
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                            />
+                        )}
+                    />
+                    <Label htmlFor="isFirstJob">Busco meu primeiro emprego</Label>
+                </div>
+
+                <div className={cn("space-y-4", isFirstJob && "opacity-50")}>
+                    {expFields.map((field, index) => (
+                    <div key={field.id} className="p-4 border rounded-md space-y-4 relative">
+                        <fieldset disabled={isFirstJob}>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
-                          <Label>Empresa</Label>
-                          <Input {...profileForm.register(`experiences.${index}.company`)} />
-                       </div>
-                        <div className="space-y-2">
-                          <Label>Data de Início</Label>
-                          <Input placeholder="MM/AAAA" {...profileForm.register(`experiences.${index}.startDate`)} />
-                       </div>
-                        <div className="space-y-2">
-                          <Label>Data de Término</Label>
-                          <Input placeholder="MM/AAAA ou Atual" {...profileForm.register(`experiences.${index}.endDate`)} />
-                       </div>
-                     </div>
-                      <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeExp(index)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                  </div>
-                ))}
-                <Button type="button" variant="outline" onClick={() => appendExp({ role: '', company: '', startDate: '', endDate: '' })}>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Experiência
-                </Button>
+                            <Label>Cargo</Label>
+                            <Input {...profileForm.register(`experiences.${index}.role`)} />
+                        </div>
+                            <div className="space-y-2">
+                            <Label>Empresa</Label>
+                            <Input {...profileForm.register(`experiences.${index}.company`)} />
+                        </div>
+                            <div className="space-y-2">
+                            <Label>Data de Início</Label>
+                            <Input placeholder="MM/AAAA" {...profileForm.register(`experiences.${index}.startDate`)} />
+                        </div>
+                            <div className="space-y-2">
+                            <Label>Data de Término</Label>
+                            <Input placeholder="MM/AAAA ou Atual" {...profileForm.register(`experiences.${index}.endDate`)} />
+                        </div>
+                        </div>
+                        <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeExp(index)} disabled={isFirstJob}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                        </fieldset>
+                    </div>
+                    ))}
+                    <Button type="button" variant="outline" onClick={() => appendExp({ role: '', company: '', startDate: '', endDate: '' })} disabled={isFirstJob}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Experiência
+                    </Button>
+                </div>
               </CardContent>
             </Card>
 
@@ -318,5 +347,3 @@ export default function CandidateProfilePage() {
     </div>
   );
 }
-
-    

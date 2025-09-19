@@ -1,253 +1,113 @@
 
+
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { resumeAutoFill } from '@/ai/flows/resume-auto-fill';
-import { suggestSkills } from '@/ai/flows/skill-suggestion';
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Camera, Bot } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Bot, Send, Sparkles } from "lucide-react";
 import { updateProfile } from "firebase/auth";
 import { auth, db } from "@/lib/firebase/client";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { conversationalResume, ConversationMessage } from "@/ai/flows/conversational-resume";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-// Define Zod schema for form validation
-const profileSchema = z.object({
-    name: z.string().min(2, "Nome é obrigatório."),
-    email: z.string().email(),
-    phone: z.string().min(10, "Telefone é obrigatório."),
-    location: z.string().optional(),
-    linkedinUrl: z.string().optional(),
-    experience: z.string().optional(),
-    education: z.string().optional(),
-    skills: z.string().optional(),
+const chatSchema = z.object({
+  message: z.string().min(1, "A mensagem não pode estar vazia."),
 });
-
-type ProfileFormValues = z.infer<typeof profileSchema>;
-
-const resumeSchema = z.object({
-  resumeText: z.string().min(50, 'O texto do currículo parece muito curto.')
-});
-type ResumeFormValues = z.infer<typeof resumeSchema>;
-
-
-// Helper function to resize and optimize image
-const resizeImage = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target?.result as string;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 200;
-        const MAX_HEIGHT = 200;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          return reject(new Error('Could not get canvas context'));
-        }
-        ctx.drawImage(img, 0, 0, width, height);
-
-        resolve(canvas.toDataURL('image/jpeg', 0.8)); // 80% quality JPEG
-      };
-      img.onerror = (error) => reject(error);
-    };
-    reader.onerror = (error) => reject(error);
-  });
-};
-
+type ChatFormValues = z.infer<typeof chatSchema>;
 
 export default function CandidateProfilePage() {
   const { user, userProfile, loading, reloadUserData } = useAuth();
   const router = useRouter();
-  const { register, setValue, handleSubmit, watch, formState: { errors } } = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileSchema)
-  });
-  const { register: registerResume, handleSubmit: handleSubmitResume, formState: { errors: resumeErrors } } = useForm<ResumeFormValues>({
-    resolver: zodResolver(resumeSchema)
-  });
-
   const { toast } = useToast();
-  const [isSuggesting, setIsSuggesting] = useState(false);
-  const [isAutoFilling, setIsAutoFilling] = useState(false);
-  const [photoUrl, setPhotoUrl] = useState(user?.photoURL);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [conversation, setConversation] = useState<ConversationMessage[]>([]);
+  const [isBuilding, setIsBuilding] = useState(false);
+  const [isAiResponding, setIsAiResponding] = useState(false);
+  
+  const conversationEndRef = useRef<HTMLDivElement>(null);
 
-
-  const experienceText = watch('experience');
+  const { register, handleSubmit, reset, setFocus, formState: { errors } } = useForm<ChatFormValues>({
+    resolver: zodResolver(chatSchema)
+  });
 
   useEffect(() => {
-    if (user && userProfile) {
-      setValue("name", user.displayName || "");
-      setValue("email", user.email || "");
-      setPhotoUrl(user.photoURL);
-      
-      const fetchProfileData = async () => {
-        const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            setValue("phone", data.phone || "");
-            setValue("location", data.location || "");
-            setValue("linkedinUrl", data.linkedinUrl || "");
-            setValue("experience", data.experience || "");
-            setValue("education", data.education || "");
-            setValue("skills", data.skills || "");
-        }
-      }
-      fetchProfileData();
-
-    } else if (!loading && (!user || userProfile?.accountType !== 'candidate')) {
+    conversationEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [conversation]);
+  
+  useEffect(() => {
+    if (!loading && (!user || userProfile?.accountType !== 'candidate')) {
       router.push('/login');
     }
-  }, [user, userProfile, loading, setValue, router]);
+  }, [user, userProfile, loading, router]);
 
-  const handleSuggestSkills = async () => {
-    if (!experienceText) {
-       toast({
-        variant: "destructive",
-        title: "Campo 'Experiência' vazio",
-        description: "Descreva sua experiência profissional para que a IA possa sugerir habilidades.",
-      });
-      return;
-    }
-
-    setIsSuggesting(true);
-    toast({ title: "Sugerindo habilidades...", description: "Aguarde enquanto a IA analisa sua experiência." });
-
+  const startConversation = async () => {
+    setIsBuilding(true);
+    setIsAiResponding(true);
+    setConversation([]);
     try {
-      const result = await suggestSkills({ experience: experienceText });
-      setValue("skills", result.skills.join(', '), { shouldValidate: true });
-      toast({
-        title: "Habilidades sugeridas!",
-        description: "As sugestões da IA foram preenchidas no campo de habilidades.",
-      });
+      const result = await conversationalResume({ history: [] });
+      setConversation(prev => [...prev, { role: 'model', content: result.nextQuestion }]);
     } catch (error) {
-      console.error("Error during AI skill suggestion:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro na sugestão",
-        description: "Não foi possível processar sua experiência. Tente novamente.",
-      });
+      toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível iniciar o assistente de IA.' });
+      setIsBuilding(false);
     } finally {
-      setIsSuggesting(false);
+      setIsAiResponding(false);
+       setTimeout(() => setFocus('message'), 100);
     }
   };
-
-  const onAutoFillSubmit = async (data: ResumeFormValues) => {
-    setIsAutoFilling(true);
-    toast({ title: "Analisando seu currículo...", description: "A IA está lendo suas informações. Isso pode levar um momento."});
+  
+  const onSendMessage = async (data: ChatFormValues) => {
+    const userMessage: ConversationMessage = { role: 'user', content: data.message };
+    const newConversation = [...conversation, userMessage];
+    setConversation(newConversation);
+    reset();
+    setIsAiResponding(true);
+    
     try {
-      const result = await resumeAutoFill({ resumeText: data.resumeText });
-      
-      // Update form values with AI result
-      setValue("name", result.name, { shouldValidate: true });
-      if (result.email) setValue("email", result.email, { shouldValidate: true });
-      setValue("phone", result.phone, { shouldValidate: true });
-      setValue("experience", result.experience.join('\n\n'), { shouldValidate: true });
-      setValue("education", result.education.join('\n'), { shouldValidate: true });
-      setValue("skills", result.skills.join(', '), { shouldValidate: true });
+        const result = await conversationalResume({ history: newConversation });
 
-      toast({
-        title: "Currículo preenchido!",
-        description: "As informações do seu currículo foram preenchidas. Revise e salve.",
-      });
+        if (result.isFinished) {
+            toast({ title: 'Currículo criado!', description: 'A IA finalizou a criação do seu currículo. Salvando perfil...' });
+            
+            // Save data
+            if(user && userProfile) {
+                await updateProfile(user, { displayName: result.profile.name });
+                const userDocRef = doc(db, 'users', user.uid);
+                await setDoc(userDocRef, {
+                    ...userProfile,
+                    displayName: result.profile.name,
+                    phone: result.profile.phone,
+                    location: result.profile.address,
+                    experience: result.profile.experiences.join('\n\n'),
+                    education: result.profile.education.join('\n'),
+                    skills: result.profile.skills.join(', '),
+                }, { merge: true });
+                reloadUserData();
+            }
+
+            setConversation(prev => [...prev, { role: 'model', content: result.nextQuestion }]);
+            setIsBuilding(false);
+
+        } else {
+            setConversation(prev => [...prev, { role: 'model', content: result.nextQuestion }]);
+        }
+
     } catch (error) {
-      console.error("Error during resume auto-fill:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao analisar",
-        description: "Não foi possível extrair as informações do texto. Verifique se o texto está completo e tente novamente.",
-      });
+        console.error("Error during conversational resume:", error);
+        setConversation(prev => [...prev, { role: 'model', content: "Desculpe, ocorreu um erro. Vamos tentar de novo. Qual era a informação que estávamos discutindo?" }]);
     } finally {
-      setIsAutoFilling(false);
-    }
-  };
-
-  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
-
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit before optimization
-        toast({
-            variant: "destructive",
-            title: "Arquivo muito grande",
-            description: "A foto de perfil deve ter no máximo 5MB.",
-        });
-        return;
-    }
-
-    try {
-        toast({ title: "Otimizando imagem..."});
-        const resizedPhoto = await resizeImage(file);
-        
-        await updateProfile(auth.currentUser!, { photoURL: resizedPhoto });
-        setPhotoUrl(resizedPhoto);
-        reloadUserData(); // Refresh user data in context
-        toast({
-            title: "Foto de perfil atualizada!",
-        });
-    } catch (error) {
-        console.error("Error uploading photo:", error);
-        toast({
-            variant: "destructive",
-            title: "Erro ao enviar foto",
-            description: "Não foi possível atualizar sua foto de perfil.",
-        });
-    }
-  }
-
-
-  const onProfileSubmit = async (data: ProfileFormValues) => {
-    if (!user) return;
-    try {
-        await updateProfile(user, { displayName: data.name });
-        
-        const userDocRef = doc(db, 'users', user.uid);
-        await setDoc(userDocRef, {
-            ...userProfile,
-            phone: data.phone,
-            location: data.location,
-            linkedinUrl: data.linkedinUrl,
-            experience: data.experience,
-            education: data.education,
-            skills: data.skills,
-        }, { merge: true });
-
-        reloadUserData();
-        toast({ title: "Perfil salvo!", description: "Suas informações foram atualizadas."})
-    } catch(e) {
-        console.error("Error saving profile: ", e);
-        toast({ variant: "destructive", title: "Erro ao salvar", description: "Não foi possível atualizar seu perfil."})
+        setIsAiResponding(false);
+        setTimeout(() => setFocus('message'), 100);
     }
   };
 
@@ -264,142 +124,75 @@ export default function CandidateProfilePage() {
   }
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+    <div className="container mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
         <div>
             <h1 className="font-headline text-3xl font-bold">Meu Currículo</h1>
-            <p className="mt-1 text-muted-foreground">Mantenha seu currículo atualizado para aumentar suas chances de encontrar o trampo ideal.</p>
+            <p className="mt-1 text-muted-foreground">Use nosso assistente de IA para criar seu currículo de forma rápida e fácil.</p>
         </div>
         
-        <Card className="mt-8 bg-accent/50 border-primary/20">
-          <CardHeader>
-            <div className="flex items-start gap-4">
-              <Bot className="h-8 w-8 text-primary mt-1" />
-              <div>
-                <CardTitle>Deixe a IA te ajudar!</CardTitle>
-                <CardDescription>
-                  Cole seu currículo (em texto) abaixo e deixe nossa IA preencher os campos para você. Depois é só revisar e salvar!
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmitResume(onAutoFillSubmit)} className="space-y-4">
-              <Textarea 
-                placeholder="Cole o conteúdo do seu currículo aqui..." 
-                rows={10}
-                {...registerResume("resumeText")}
-              />
-              {resumeErrors.resumeText && <p className="text-sm text-destructive">{resumeErrors.resumeText.message}</p>}
-              <Button type="submit" disabled={isAutoFilling}>
-                <Sparkles className="mr-2 h-4 w-4"/>
-                {isAutoFilling ? 'Analisando...' : 'Analisar com IA'}
-              </Button>
-            </form>
-          </CardContent>
+        <Card className="mt-8">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Bot className="text-primary"/>
+                    Assistente de Currículo
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                {!isBuilding ? (
+                    <div className="text-center p-8">
+                        <p className="mb-4">Pronto para criar seu currículo? A nossa IA vai te guiar com algumas perguntas.</p>
+                        <Button onClick={startConversation}>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Começar a criar
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="flex flex-col h-[60vh]">
+                        <div className="flex-grow space-y-4 overflow-y-auto pr-4">
+                            {conversation.map((msg, index) => (
+                                <div key={index} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                                    {msg.role === 'model' && <Avatar className="h-8 w-8"><AvatarFallback><Bot size={20}/></AvatarFallback></Avatar>}
+                                    <div className={`max-w-md rounded-lg p-3 ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                                    </div>
+                                    {msg.role === 'user' && (
+                                      <Avatar className="h-8 w-8">
+                                          <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ""} />
+                                          <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
+                                      </Avatar>
+                                    )}
+                                </div>
+                            ))}
+                             {isAiResponding && (
+                                <div className="flex items-end gap-2">
+                                     <Avatar className="h-8 w-8"><AvatarFallback><Bot size={20}/></AvatarFallback></Avatar>
+                                    <div className="max-w-md rounded-lg p-3 bg-muted">
+                                        <div className="flex items-center gap-2">
+                                           <span className="h-2 w-2 bg-primary rounded-full animate-pulse [animation-delay:-0.3s]"></span>
+                                           <span className="h-2 w-2 bg-primary rounded-full animate-pulse [animation-delay:-0.15s]"></span>
+                                           <span className="h-2 w-2 bg-primary rounded-full animate-pulse"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            <div ref={conversationEndRef} />
+                        </div>
+                        <form onSubmit={handleSubmit(onSendMessage)} className="mt-4 flex gap-2">
+                            <Input 
+                                {...register("message")}
+                                placeholder="Digite sua resposta..."
+                                autoComplete="off"
+                                disabled={isAiResponding}
+                            />
+                            <Button type="submit" disabled={isAiResponding}>
+                                <Send className="h-4 w-4" />
+                            </Button>
+                        </form>
+                         {errors.message && <p className="text-sm text-destructive mt-1">{errors.message.message}</p>}
+                    </div>
+                )}
+            </CardContent>
         </Card>
-
-      <form onSubmit={handleSubmit(onProfileSubmit)} className="mt-12 space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>1. Informações Pessoais</CardTitle>
-            <CardDescription>Revise seus dados de contato e informações básicas. Comece pela sua foto.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-6">
-             <div className="flex items-center gap-4">
-                <div className="relative">
-                    <Avatar className="h-24 w-24 border-2 border-primary">
-                        <AvatarImage src={photoUrl ?? undefined} alt={user.displayName ?? ""} />
-                        <AvatarFallback className="text-3xl">{user.displayName?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <Button 
-                        variant="outline"
-                        size="icon"
-                        type="button"
-                        className="absolute bottom-0 right-0 rounded-full"
-                        onClick={() => fileInputRef.current?.click()}
-                    >
-                        <Camera className="h-4 w-4" />
-                    </Button>
-                    <Input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        className="hidden" 
-                        accept="image/png, image/jpeg"
-                        onChange={handlePhotoUpload}
-                    />
-                </div>
-                 <div className="w-full space-y-2">
-                    <Label htmlFor="name">Nome Completo</Label>
-                    <Input id="name" {...register("name")} />
-                    {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-                </div>
-             </div>
-            <div className="grid gap-6 sm:grid-cols-2">
-                <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" {...register("email")} disabled />
-                </div>
-                <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input id="phone" type="tel" placeholder="(51) 91234-5678" {...register("phone")} />
-                {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
-                </div>
-                <div className="space-y-2">
-                <Label htmlFor="location">Localização (Opcional)</Label>
-                <Input id="location" placeholder="Porto Alegre, RS" {...register("location")} />
-                </div>
-                <div className="space-y-2">
-                <Label htmlFor="linkedinUrl">LinkedIn (Opcional)</Label>
-                <Input id="linkedinUrl" type="text" placeholder="linkedin.com/in/seu-perfil" {...register("linkedinUrl")} />
-                </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>2. Experiência Profissional</CardTitle>
-            <CardDescription>Descreva suas experiências anteriores. A IA preenche este campo com base no seu currículo colado acima.</CardDescription>
-          </CardHeader>
-          <CardContent>
-              <Textarea placeholder="Ex: Vendedor na Loja X (2020-2022) - Responsável pelo atendimento ao cliente e fechamento de vendas..." rows={8} {...register("experience")} />
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>3. Educação</CardTitle>
-            <CardDescription>Liste suas formações acadêmicas.</CardDescription>
-          </CardHeader>
-          <CardContent>
-              <Textarea placeholder="Ex: Bacharelado em Administração - UFRGS (2016-2020)" rows={4} {...register("education")} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-                <div>
-                    <CardTitle>4. Habilidades</CardTitle>
-                    <CardDescription>Liste suas competências (separadas por vírgula).</CardDescription>
-                </div>
-                <Button type="button" onClick={handleSuggestSkills} disabled={isSuggesting} variant="outline" size="sm">
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    {isSuggesting ? 'Analisando...' : 'Sugerir com IA'}
-                </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-              <Input placeholder="Ex: React, Vendas, Gestão de Pessoas, Liderança" {...register("skills")} />
-          </CardContent>
-        </Card>
-
-        <div className="mt-12 flex justify-end">
-          <Button size="lg" type="submit">Salvar Currículo</Button>
-        </div>
-      </form>
     </div>
   );
 }
-
-    

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useRouter, useParams } from 'next/navigation';
@@ -177,7 +178,7 @@ export default function ApplyPage() {
     }
   };
 
-  const getAppliedDate = (timestamp: Timestamp) => {
+  const getAppliedDate = (timestamp: Application['appliedAt']) => {
       if (!timestamp) return 'Data indisponível';
       return new Timestamp(timestamp.seconds, timestamp.nanoseconds).toDate().toLocaleDateString('pt-BR');
   }
@@ -371,3 +372,5 @@ export default function ApplyPage() {
     </div>
   );
 }
+
+    

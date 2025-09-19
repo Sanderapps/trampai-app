@@ -45,6 +45,7 @@ export type Application = {
     candidateEmail: string;
     candidatePhone?: string;
     candidateSocialUrl?: string;
+    candidatePhotoUrl?: string | null;
     resumeFile?: {
       name: string;
       type: string;
@@ -65,5 +66,9 @@ export type UserProfile = {
   linkedinUrl?: string;
   experience?: string;
   skills?: string;
+  education?: string;
   resumeText?: string;
+  photoURL?: string;
 }
+
+    

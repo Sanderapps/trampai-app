@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -22,12 +23,12 @@ const ResumeAutoFillInputSchema = z.object({
 export type ResumeAutoFillInput = z.infer<typeof ResumeAutoFillInputSchema>;
 
 const ResumeAutoFillOutputSchema = z.object({
-  name: z.string().describe('The name of the candidate.'),
+  name: z.string().describe('The full name of the candidate.'),
   email: z.string().email().describe('The email address of the candidate.'),
   phone: z.string().describe('The phone number of the candidate.'),
-  experience: z.array(z.string()).describe('A list of the candidate\'s work experiences.'),
+  experience: z.array(z.string()).describe('A list of the candidate\'s work experiences. Each item in the array should be a separate job/role description.'),
   skills: z.array(z.string()).describe('A list of the candidate\'s skills.'),
-  education: z.array(z.string()).describe('A list of the candidate\'s education history.'),
+  education: z.array(z.string()).describe('A list of the candidate\'s education history. Each item should be a separate degree or course.'),
 });
 export type ResumeAutoFillOutput = z.infer<typeof ResumeAutoFillOutputSchema>;
 
@@ -39,20 +40,23 @@ const prompt = ai.definePrompt({
   name: 'resumeAutoFillPrompt',
   input: {schema: ResumeAutoFillInputSchema},
   output: {schema: ResumeAutoFillOutputSchema},
-  prompt: `Você é um assistente de IA projetado para extrair informações de currículos em português.
+  prompt: `Você é um assistente de IA especialista em extrair informações estruturadas de textos de currículos em português.
 
-  Por favor, extraia as seguintes informações do texto do currículo fornecido:
-  - Nome
-  - Endereço de e-mail
-  - Número de telefone
-  - Experiência de trabalho (como uma lista de strings, descrevendo cada cargo e empresa)
-  - Habilidades (como uma lista de strings)
-  - Histórico educacional (como uma lista de strings)
+  Analise o texto do currículo abaixo e extraia as seguintes informações:
+  - Nome completo do candidato.
+  - Endereço de e-mail.
+  - Número de telefone.
+  - Experiência profissional: Separe cada experiência de trabalho em um item de uma lista.
+  - Habilidades: Liste as habilidades técnicas e interpessoais.
+  - Histórico educacional: Separe cada formação ou curso em um item de uma lista.
 
-  Seja o mais preciso possível. Se uma informação não for encontrada, retorne um valor vazio para o campo correspondente.
+  Seja o mais preciso possível. Se uma informação não for encontrada, retorne um valor vazio para o campo correspondente (ex: "" para strings, [] para listas).
 
-  Aqui está o texto do currículo:
-  {{{resumeText}}}`,
+  Texto do Currículo:
+  """
+  {{{resumeText}}}
+  """
+  `,
 });
 
 const resumeAutoFillFlow = ai.defineFlow(
@@ -69,3 +73,5 @@ const resumeAutoFillFlow = ai.defineFlow(
     return output;
   }
 );
+
+    

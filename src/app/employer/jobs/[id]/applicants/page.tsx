@@ -153,11 +153,11 @@ export default function ApplicantsPage() {
       const userDoc = await getDoc(userDocRef);
       if (userDoc.exists()) {
         const candidateData = userDoc.data() as UserProfile;
-        // Also get photo from auth user object if available
         setSelectedCandidate({
             ...candidateData,
-            photoURL: application.candidatePhotoUrl,
-        } as any);
+            photoURL: application.candidatePhotoUrl ?? undefined,
+            displayName: application.candidateName
+        });
 
       }
     } catch (error) {
@@ -167,7 +167,7 @@ export default function ApplicantsPage() {
     }
   };
 
-  const getAppliedDate = (timestamp: Timestamp) => {
+  const getAppliedDate = (timestamp: Application['appliedAt']) => {
       if (!timestamp) return 'Data indisponível';
       return new Timestamp(timestamp.seconds, timestamp.nanoseconds).toDate().toLocaleDateString('pt-BR');
   }
@@ -305,7 +305,7 @@ export default function ApplicantsPage() {
                     <div className="space-y-6">
                         <div className="flex flex-col sm:flex-row items-start gap-6">
                              <Avatar className="h-24 w-24 border-2 border-primary">
-                                <AvatarImage src={(selectedCandidate as any).photoURL ?? undefined} alt={selectedCandidate.displayName ?? ""} />
+                                <AvatarImage src={selectedCandidate.photoURL ?? undefined} alt={selectedCandidate.displayName ?? ""} />
                                 <AvatarFallback className="text-3xl">{selectedCandidate.displayName?.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div className='flex-1 space-y-2'>
@@ -364,6 +364,15 @@ export default function ApplicantsPage() {
                             </div>
                         )}
 
+                        {selectedCandidate.education && (
+                            <div>
+                                <h3 className="text-lg font-semibold flex items-center gap-2 mb-2"><FileText className='h-5 w-5 text-primary'/> Educação</h3>
+                                 <div className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground">
+                                    {selectedCandidate.education}
+                                </div>
+                            </div>
+                        )}
+
                         {selectedApplication?.coverLetter && (
                              <div>
                                 <h3 className="text-lg font-semibold flex items-center gap-2 mb-2"><FileText className='h-5 w-5 text-primary'/> Carta de Apresentação</h3>
@@ -390,3 +399,5 @@ export default function ApplicantsPage() {
     </div>
   );
 }
+
+    

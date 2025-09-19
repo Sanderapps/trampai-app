@@ -12,9 +12,10 @@ import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { resumeAutoFill } from '@/ai/flows/resume-auto-fill';
 import { suggestSkills } from '@/ai/flows/skill-suggestion';
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Camera } from "lucide-react";
+import { Sparkles, Camera, Bot } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { updateProfile } from "firebase/auth";
 import { auth, db } from "@/lib/firebase/client";
@@ -29,10 +30,16 @@ const profileSchema = z.object({
     location: z.string().optional(),
     linkedinUrl: z.string().optional(),
     experience: z.string().optional(),
+    education: z.string().optional(),
     skills: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
+
+const resumeSchema = z.object({
+  resumeText: z.string().min(50, 'O texto do currículo parece muito curto.')
+});
+type ResumeFormValues = z.infer<typeof resumeSchema>;
 
 
 // Helper function to resize and optimize image
@@ -85,8 +92,13 @@ export default function CandidateProfilePage() {
   const { register, setValue, handleSubmit, watch, formState: { errors } } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema)
   });
+  const { register: registerResume, handleSubmit: handleSubmitResume, formState: { errors: resumeErrors } } = useForm<ResumeFormValues>({
+    resolver: zodResolver(resumeSchema)
+  });
+
   const { toast } = useToast();
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [photoUrl, setPhotoUrl] = useState(user?.photoURL);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -104,11 +116,12 @@ export default function CandidateProfilePage() {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
-            setValue("phone", data.phone);
-            setValue("location", data.location);
-            setValue("linkedinUrl", data.linkedinUrl);
-            setValue("experience", data.experience);
-            setValue("skills", data.skills);
+            setValue("phone", data.phone || "");
+            setValue("location", data.location || "");
+            setValue("linkedinUrl", data.linkedinUrl || "");
+            setValue("experience", data.experience || "");
+            setValue("education", data.education || "");
+            setValue("skills", data.skills || "");
         }
       }
       fetchProfileData();
@@ -133,14 +146,11 @@ export default function CandidateProfilePage() {
 
     try {
       const result = await suggestSkills({ experience: experienceText });
-      
       setValue("skills", result.skills.join(', '), { shouldValidate: true });
-      
       toast({
         title: "Habilidades sugeridas!",
         description: "As sugestões da IA foram preenchidas no campo de habilidades.",
       });
-
     } catch (error) {
       console.error("Error during AI skill suggestion:", error);
       toast({
@@ -150,6 +160,36 @@ export default function CandidateProfilePage() {
       });
     } finally {
       setIsSuggesting(false);
+    }
+  };
+
+  const onAutoFillSubmit = async (data: ResumeFormValues) => {
+    setIsAutoFilling(true);
+    toast({ title: "Analisando seu currículo...", description: "A IA está lendo suas informações. Isso pode levar um momento."});
+    try {
+      const result = await resumeAutoFill({ resumeText: data.resumeText });
+      
+      // Update form values with AI result
+      setValue("name", result.name, { shouldValidate: true });
+      if (result.email) setValue("email", result.email, { shouldValidate: true });
+      setValue("phone", result.phone, { shouldValidate: true });
+      setValue("experience", result.experience.join('\n\n'), { shouldValidate: true });
+      setValue("education", result.education.join('\n'), { shouldValidate: true });
+      setValue("skills", result.skills.join(', '), { shouldValidate: true });
+
+      toast({
+        title: "Currículo preenchido!",
+        description: "As informações do seu currículo foram preenchidas. Revise e salve.",
+      });
+    } catch (error) {
+      console.error("Error during resume auto-fill:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao analisar",
+        description: "Não foi possível extrair as informações do texto. Verifique se o texto está completo e tente novamente.",
+      });
+    } finally {
+      setIsAutoFilling(false);
     }
   };
 
@@ -187,7 +227,7 @@ export default function CandidateProfilePage() {
   }
 
 
-  const onSubmit = async (data: ProfileFormValues) => {
+  const onProfileSubmit = async (data: ProfileFormValues) => {
     if (!user) return;
     try {
         await updateProfile(user, { displayName: data.name });
@@ -199,6 +239,7 @@ export default function CandidateProfilePage() {
             location: data.location,
             linkedinUrl: data.linkedinUrl,
             experience: data.experience,
+            education: data.education,
             skills: data.skills,
         }, { merge: true });
 
@@ -228,12 +269,40 @@ export default function CandidateProfilePage() {
             <h1 className="font-headline text-3xl font-bold">Meu Currículo</h1>
             <p className="mt-1 text-muted-foreground">Mantenha seu currículo atualizado para aumentar suas chances de encontrar o trampo ideal.</p>
         </div>
-      
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Card className="mt-8">
+        
+        <Card className="mt-8 bg-accent/50 border-primary/20">
           <CardHeader>
-            <CardTitle>Informações Pessoais</CardTitle>
-            <CardDescription>Seus dados de contato e informações básicas. Comece pela sua foto.</CardDescription>
+            <div className="flex items-start gap-4">
+              <Bot className="h-8 w-8 text-primary mt-1" />
+              <div>
+                <CardTitle>Deixe a IA te ajudar!</CardTitle>
+                <CardDescription>
+                  Cole seu currículo (em texto) abaixo e deixe nossa IA preencher os campos para você. Depois é só revisar e salvar!
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmitResume(onAutoFillSubmit)} className="space-y-4">
+              <Textarea 
+                placeholder="Cole o conteúdo do seu currículo aqui..." 
+                rows={10}
+                {...registerResume("resumeText")}
+              />
+              {resumeErrors.resumeText && <p className="text-sm text-destructive">{resumeErrors.resumeText.message}</p>}
+              <Button type="submit" disabled={isAutoFilling}>
+                <Sparkles className="mr-2 h-4 w-4"/>
+                {isAutoFilling ? 'Analisando...' : 'Analisar com IA'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+      <form onSubmit={handleSubmit(onProfileSubmit)} className="mt-12 space-y-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>1. Informações Pessoais</CardTitle>
+            <CardDescription>Revise seus dados de contato e informações básicas. Comece pela sua foto.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
              <div className="flex items-center gap-4">
@@ -287,21 +356,31 @@ export default function CandidateProfilePage() {
           </CardContent>
         </Card>
         
-        <Card className="mt-8">
+        <Card>
           <CardHeader>
-            <CardTitle>Experiência Profissional</CardTitle>
-            <CardDescription>Descreva suas experiências anteriores. Use o botão de IA no campo de habilidades para receber sugestões.</CardDescription>
+            <CardTitle>2. Experiência Profissional</CardTitle>
+            <CardDescription>Descreva suas experiências anteriores. A IA preenche este campo com base no seu currículo colado acima.</CardDescription>
           </CardHeader>
           <CardContent>
               <Textarea placeholder="Ex: Vendedor na Loja X (2020-2022) - Responsável pelo atendimento ao cliente e fechamento de vendas..." rows={8} {...register("experience")} />
           </CardContent>
         </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>3. Educação</CardTitle>
+            <CardDescription>Liste suas formações acadêmicas.</CardDescription>
+          </CardHeader>
+          <CardContent>
+              <Textarea placeholder="Ex: Bacharelado em Administração - UFRGS (2016-2020)" rows={4} {...register("education")} />
+          </CardContent>
+        </Card>
 
-        <Card className="mt-8">
+        <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
                 <div>
-                    <CardTitle>Habilidades</CardTitle>
+                    <CardTitle>4. Habilidades</CardTitle>
                     <CardDescription>Liste suas competências (separadas por vírgula).</CardDescription>
                 </div>
                 <Button type="button" onClick={handleSuggestSkills} disabled={isSuggesting} variant="outline" size="sm">
@@ -322,3 +401,5 @@ export default function CandidateProfilePage() {
     </div>
   );
 }
+
+    

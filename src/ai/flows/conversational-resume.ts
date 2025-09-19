@@ -40,8 +40,13 @@ const prompt = ai.definePrompt({
 
 Sua tarefa é conduzir uma conversa para coletar as informações necessárias para montar um currículo, fazendo UMA PERGUNTA DE CADA VEZ.
 
+Analise o histórico da conversa para entender em que parte do processo você está e quais informações já foram coletadas. O histórico é:
+{{#each history}}
+- {{role}}: {{content}}
+{{/each}}
+
 O processo deve seguir a seguinte ordem de perguntas:
-1.  Nome completo.
+1.  Se o histórico estiver vazio, sua primeira resposta em 'nextQuestion' DEVE SER para dar as boas-vindas e pedir o nome completo.
 2.  Cidade e estado onde mora (ex: Porto Alegre, RS).
 3.  Número de telefone para contato.
 4.  Principal experiência profissional (peça uma de cada vez).
@@ -53,9 +58,7 @@ O processo deve seguir a seguinte ordem de perguntas:
 
 REGRAS IMPORTANTES:
 - FAÇA APENAS UMA PERGUNTA POR VEZ.
-- Analise o histórico da conversa para entender em que parte do processo você está e quais informações já foram coletadas. O histórico é: {{jsonStringify history}}
-- Se o histórico estiver vazio, sua primeira resposta em 'nextQuestion' DEVE SER para dar as boas-vindas e pedir o nome completo.
-- Preencha o campo 'profile' com os dados que você já coletou.
+- Preencha o campo 'profile' com os dados que você já coletou ao longo da conversa.
 - Se o usuário disser "parar" ou "cancelar", encerre a conversa educadamente.
 - Quando todas as informações forem coletadas, defina 'isFinished' como 'true' e forneça uma mensagem de conclusão em 'nextQuestion'.
 `,
@@ -68,10 +71,22 @@ const conversationalResumeFlow = ai.defineFlow(
     outputSchema: ConversationalResumeOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    if (!output) {
-      throw new Error("A IA não conseguiu processar a conversa.");
+    console.log('--- Iniciando conversationalResumeFlow ---');
+    console.log('Input recebido:', JSON.stringify(input, null, 2));
+
+    try {
+      const { output } = await prompt(input);
+      if (!output) {
+        console.error('Erro: A resposta do prompt da IA foi nula ou indefinida.');
+        throw new Error("A IA não retornou uma resposta válida.");
+      }
+      console.log('Output da IA:', JSON.stringify(output, null, 2));
+      console.log('--- Finalizando conversationalResumeFlow com sucesso ---');
+      return output;
+    } catch (error) {
+      console.error('!!! Erro crítico no conversationalResumeFlow !!!', error);
+      // Re-throw the error to be caught by the client-side caller
+      throw new Error("Ocorreu um erro interno ao se comunicar com a IA.");
     }
-    return output;
   }
 );

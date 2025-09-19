@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { Briefcase, Twitter, Facebook, Linkedin } from 'lucide-react';
 
@@ -41,6 +42,7 @@ export function Footer() {
                   <li><Link href="/jobs" className="text-sm text-muted-foreground hover:text-foreground">Buscar Vagas</Link></li>
                   <li><Link href="/candidate/profile" className="text-sm text-muted-foreground hover:text-foreground">Meu Perfil</Link></li>
                   <li><Link href="/candidate/dashboard" className="text-sm text-muted-foreground hover:text-foreground">Minhas Candidaturas</Link></li>
+                   <li><Link href="/candidate/saved-jobs" className="text-sm text-muted-foreground hover:text-foreground">Vagas Salvas</Link></li>
                 </ul>
               </div>
               <div className="mt-12 md:mt-0">

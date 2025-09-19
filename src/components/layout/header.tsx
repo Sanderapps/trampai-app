@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Briefcase, Menu, LayoutDashboard, User, LogOut } from 'lucide-react';
+import { Briefcase, Menu, LayoutDashboard, User, LogOut, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -97,6 +98,11 @@ export function Header() {
                  <DropdownMenuItem asChild>
                     <Link href={getProfileLink()}><User className='mr-2'/>Meu Perfil</Link>
                 </DropdownMenuItem>
+                {userProfile?.accountType === 'candidate' && (
+                    <DropdownMenuItem asChild>
+                        <Link href="/candidate/saved-jobs"><Heart className='mr-2'/>Vagas Salvas</Link>
+                    </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={signOut}>
                   <LogOut className='mr-2'/>Sair
@@ -151,6 +157,9 @@ export function Header() {
                    <>
                     <Link href={getDashboardLink()} className='px-3 py-2 text-base font-medium' onClick={() => setIsMobileMenuOpen(false)}>Painel</Link>
                     <Link href={getProfileLink()} className='px-3 py-2 text-base font-medium' onClick={() => setIsMobileMenuOpen(false)}>Meu Perfil</Link>
+                    {userProfile?.accountType === 'candidate' && (
+                       <Link href="/candidate/saved-jobs" className='px-3 py-2 text-base font-medium' onClick={() => setIsMobileMenuOpen(false)}>Vagas Salvas</Link>
+                    )}
                     <Button variant="ghost" onClick={() => {signOut(); setIsMobileMenuOpen(false);}}>Sair</Button>
                    </>
                  ) : (

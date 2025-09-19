@@ -23,6 +23,7 @@ export type Job = {
   description: string;
   postedAt: Date | Timestamp | { seconds: number, nanoseconds: number };
   employerId: string;
+  keywords?: string[];
   contact?: {
     email: string;
     whatsapp: string;

@@ -35,8 +35,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/client';
 import { companies } from '@/lib/data';
+import { useAuth } from '@/contexts/auth-context';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from 'react';
 
 interface JobCardProps {
   job: Job;
@@ -44,6 +49,57 @@ interface JobCardProps {
 
 export function JobCard({ job }: JobCardProps) {
   const company = companies.find(c => c.id === job.companyId);
+  const { user, userProfile } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    const checkIfSaved = async () => {
+        if (!user || userProfile?.accountType !== 'candidate') return;
+        const savedJobRef = doc(db, 'users', user.uid, 'savedJobs', job.id);
+        const docSnap = await getDoc(savedJobRef);
+        setIsSaved(docSnap.exists());
+    };
+    checkIfSaved();
+  }, [user, job.id, userProfile]);
+
+  const handleSaveJob = async () => {
+    if (!user) {
+      router.push(`/login?redirect=/jobs/${job.id}`);
+      return;
+    }
+     if (userProfile?.accountType !== 'candidate') {
+      toast({
+        variant: "destructive",
+        title: "Ação não permitida",
+        description: "Apenas candidatos podem salvar vagas.",
+      });
+      return;
+    }
+
+    const savedJobRef = doc(db, 'users', user.uid, 'savedJobs', job.id);
+
+    try {
+        if (isSaved) {
+            await deleteDoc(savedJobRef);
+            setIsSaved(false);
+            toast({ title: "Vaga removida da sua lista."});
+        } else {
+            await setDoc(savedJobRef, { jobId: job.id, savedAt: new Date() });
+            setIsSaved(true);
+            toast({ title: "Vaga salva com sucesso!"});
+        }
+    } catch (error) {
+        console.error("Error saving/unsaving job: ", error);
+        toast({
+            variant: "destructive",
+            title: "Erro",
+            description: "Não foi possível salvar a vaga. Tente novamente.",
+        });
+    }
+  };
+
 
   const formatSalary = (job: Job) => {
     if (job.type === 'Extra/Freelancer') {
@@ -99,14 +155,13 @@ export function JobCard({ job }: JobCardProps) {
 
     if (available.length === 0 && !hasOthers) return null;
     
-    const totalBenefits = available.length + (hasOthers ? 1 : 0);
-    const benefitsToShow = available.slice(0, 3);
+    let benefitsToShow = available.slice(0, 3);
     
     let summary = benefitsToShow.join(', ');
 
-    if (totalBenefits > 3) {
+    if (available.length + (hasOthers ? 1 : 0) > 3) {
       summary += '...';
-    } else if (hasOthers && totalBenefits <= 3) {
+    } else if (hasOthers) {
        if(available.length > 0) {
          summary += `, ${job.benefits.others}`;
        } else {
@@ -152,12 +207,12 @@ export function JobCard({ job }: JobCardProps) {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="shrink-0">
-                <Heart className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="shrink-0" onClick={handleSaveJob}>
+                <Heart className={`h-5 w-5 ${isSaved ? 'fill-primary text-primary' : ''}`} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Salvar vaga</p>
+              <p>{isSaved ? 'Remover vaga salva' : 'Salvar vaga'}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

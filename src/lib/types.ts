@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase/firestore";
+
 export type Company = {
   id: string;
   name: string;
@@ -17,8 +19,8 @@ export type Job = {
   };
   dailyRate?: number;
   description: string;
-  postedAt: Date;
-  contact: {
+  postedAt: Date | Timestamp;
+  contact?: {
     email: string;
     whatsapp: string;
   };

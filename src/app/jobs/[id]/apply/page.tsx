@@ -1,6 +1,5 @@
 'use client';
 
-import { jobs } from '@/lib/data';
 import { notFound, useRouter } from 'next/navigation';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +13,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from 'react';
+import { Job } from '@/lib/types';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const applySchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório'),
@@ -28,18 +32,50 @@ type ApplyFormValues = z.infer<typeof applySchema>;
 export default function ApplyPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { toast } = useToast();
-  const job = jobs.find((j) => j.id === params.id);
+  const [job, setJob] = useState<Job | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ApplyFormValues>({
     resolver: zodResolver(applySchema),
   });
+
+   useEffect(() => {
+    const fetchJob = async () => {
+      setLoading(true);
+      try {
+        const jobDoc = await getDoc(doc(db, 'jobs', params.id));
+        if (jobDoc.exists()) {
+          setJob({ id: jobDoc.id, ...jobDoc.data() } as Job);
+        } else {
+          notFound();
+        }
+      } catch (error) {
+        console.error("Error fetching job:", error);
+        notFound();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJob();
+  }, [params.id]);
+
+
+  if (loading) {
+    return (
+      <div className="container mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+        <Skeleton className="h-10 w-48 mb-8" />
+        <Skeleton className="h-[700px] w-full" />
+      </div>
+    )
+  }
 
   if (!job) {
     notFound();
   }
 
   const onSubmit: SubmitHandler<ApplyFormValues> = async (data) => {
-    // Simulate API call
+    // Simulate API call for application
     await new Promise(resolve => setTimeout(resolve, 2000));
     console.log(data);
     toast({

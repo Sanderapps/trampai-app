@@ -32,6 +32,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Timestamp } from 'firebase/firestore';
 
 interface JobCardProps {
   job: Job;
@@ -48,6 +49,13 @@ export function JobCard({ job }: JobCardProps) {
     }
     return `R$ ${job.salary.min.toLocaleString('pt-BR')} - R$ ${job.salary.max.toLocaleString('pt-BR')}`;
   };
+
+  const getPostedAt = () => {
+    if (job.postedAt instanceof Timestamp) {
+      return job.postedAt.toDate();
+    }
+    return job.postedAt;
+  }
 
   return (
     <Card className="flex h-full flex-col overflow-hidden transition-shadow hover:shadow-lg">
@@ -95,7 +103,7 @@ export function JobCard({ job }: JobCardProps) {
           <Clock className="h-4 w-4" />
           <span>
             Publicado{' '}
-            {formatDistanceToNow(job.postedAt, {
+            {formatDistanceToNow(getPostedAt(), {
               addSuffix: true,
               locale: ptBR,
             })}
@@ -109,36 +117,38 @@ export function JobCard({ job }: JobCardProps) {
             Candidatar-se
           </Link>
         </Button>
-        <div className="flex w-full gap-2 sm:w-auto">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button asChild variant="outline" size="icon" className="flex-1 sm:flex-initial">
-                  <a href={`https://wa.me/${job.contact.whatsapp}`} target="_blank" rel="noopener noreferrer">
-                    <WhatsappIcon className="h-5 w-5" />
-                    <span className="sr-only">Contato via WhatsApp</span>
-                  </a>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Contato via WhatsApp</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button asChild variant="outline" size="icon" className="flex-1 sm:flex-initial">
-                  <a href={`mailto:${job.contact.email}`}>
-                    <Mail className="h-5 w-5" />
-                    <span className="sr-only">Contato via E-mail</span>
-                  </a>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Contato via E-mail</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
+        {job.contact && (
+          <div className="flex w-full gap-2 sm:w-auto">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="outline" size="icon" className="flex-1 sm:flex-initial">
+                    <a href={`https://wa.me/${job.contact.whatsapp}`} target="_blank" rel="noopener noreferrer">
+                      <WhatsappIcon className="h-5 w-5" />
+                      <span className="sr-only">Contato via WhatsApp</span>
+                    </a>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Contato via WhatsApp</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="outline" size="icon" className="flex-1 sm:flex-initial">
+                    <a href={`mailto:${job.contact.email}`}>
+                      <Mail className="h-5 w-5" />
+                      <span className="sr-only">Contato via E-mail</span>
+                    </a>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Contato via E-mail</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        )}
       </CardFooter>
     </Card>
   );

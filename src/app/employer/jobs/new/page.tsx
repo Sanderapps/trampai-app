@@ -14,6 +14,10 @@ import { useToast } from '@/hooks/use-toast';
 import { generateJobDescription } from '@/ai/flows/job-description-assistant';
 import { useState } from 'react';
 import { Sparkles } from 'lucide-react';
+import { useAuth } from '@/contexts/auth-context';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/client';
+import { companies } from '@/lib/data';
 
 const jobSchema = z.object({
   jobTitle: z.string().min(3, 'Título da vaga é obrigatório'),
@@ -31,6 +35,7 @@ type JobFormValues = z.infer<typeof jobSchema>;
 export default function NewJobPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm<JobFormValues>({
@@ -71,13 +76,42 @@ export default function NewJobPage() {
   };
 
   const onSubmit: SubmitHandler<JobFormValues> = async (data) => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log(data);
-    toast({
-      title: 'Vaga publicada com sucesso!',
-      description: `A vaga de ${data.jobTitle} está agora na plataforma.`,
-    });
-    router.push('/employer/dashboard');
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Você precisa estar logado para publicar uma vaga.' });
+        return;
+    }
+
+    try {
+        const company = companies.find(c => c.id === '1'); // Mock company data for now
+        
+        const jobData = {
+            title: data.jobTitle,
+            description: data.jobDescription,
+            location: data.location,
+            type: data.type,
+            keywords: data.keywords.split(',').map(k => k.trim()),
+            postedAt: serverTimestamp(),
+            company: company, // Replace with actual employer company data
+            employerId: user.uid,
+            salary: (data.salaryMin && data.salaryMax) ? { min: data.salaryMin, max: data.salaryMax } : null,
+            dailyRate: data.dailyRate || null,
+        };
+
+        await addDoc(collection(db, 'jobs'), jobData);
+
+        toast({
+            title: 'Vaga publicada com sucesso!',
+            description: `A vaga de ${data.jobTitle} está agora na plataforma.`,
+        });
+        router.push('/employer/dashboard');
+    } catch (error) {
+        console.error("Error adding document: ", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao publicar vaga",
+            description: "Não foi possível salvar a vaga no banco de dados.",
+        });
+    }
   };
 
   return (

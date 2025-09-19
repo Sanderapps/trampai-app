@@ -1,4 +1,4 @@
-import { jobs } from '@/lib/data';
+'use client';
 import { Job } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -25,15 +25,62 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { doc, getDoc, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/client';
+import { useEffect, useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function JobDetailsPage({ params }: { params: { id: string } }) {
-  const job = jobs.find((j) => j.id === params.id);
+  const [job, setJob] = useState<Job | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchJob = async () => {
+      setLoading(true);
+      try {
+        const jobDoc = await getDoc(doc(db, 'jobs', params.id));
+        if (jobDoc.exists()) {
+          setJob({ id: jobDoc.id, ...jobDoc.data() } as Job);
+        } else {
+          notFound();
+        }
+      } catch (error) {
+        console.error("Error fetching job:", error);
+        notFound();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJob();
+  }, [params.id]);
+
+
+  if (loading) {
+    return (
+        <div className="bg-muted/30">
+            <div className="container mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+                 <Skeleton className="h-10 w-48 mb-8" />
+                 <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+                    <div className="md:col-span-2 space-y-4">
+                        <Skeleton className="h-48 w-full" />
+                        <Skeleton className="h-96 w-full" />
+                    </div>
+                    <div className="space-y-6">
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-48 w-full" />
+                        <Skeleton className="h-24 w-full" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+  }
 
   if (!job) {
-    notFound();
+    return notFound();
   }
-  
+
   const formatSalary = (job: Job) => {
     if (job.type === 'Extra/Freelancer') {
         return job.dailyRate ? `R$ ${job.dailyRate.toLocaleString('pt-BR')} / dia` : 'A combinar';
@@ -45,6 +92,12 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
     return `R$ ${job.salary.min.toLocaleString('pt-BR')} - R$ ${job.salary.max.toLocaleString('pt-BR')}`;
   };
 
+  const getPostedAt = () => {
+    if (job.postedAt instanceof Timestamp) {
+      return job.postedAt.toDate();
+    }
+    return job.postedAt;
+  }
 
   return (
     <div className="bg-muted/30">
@@ -85,18 +138,6 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
                         <CardContent>
                             <div className="prose max-w-none text-foreground">
                                 <p>{job.description}</p>
-                                <h3>Responsabilidades</h3>
-                                <ul>
-                                    <li>Desenvolver e manter interfaces de usuário.</li>
-                                    <li>Colaborar com equipes multifuncionais.</li>
-                                    <li>Escrever código limpo e testável.</li>
-                                </ul>
-                                <h3>Qualificações</h3>
-                                <ul>
-                                    <li>Experiência com React, Next.js.</li>
-                                    <li>Conhecimento em TypeScript.</li>
-                                    <li>Familiaridade com metodologias ágeis.</li>
-                                </ul>
                             </div>
                         </CardContent>
                     </Card>
@@ -129,7 +170,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
                                 <Clock className="h-5 w-5 text-muted-foreground" />
                                 <div>
                                     <p className="font-semibold">Publicado</p>
-                                    <p className="text-muted-foreground">{formatDistanceToNow(job.postedAt, { addSuffix: true, locale: ptBR })}</p>
+                                    <p className="text-muted-foreground">{formatDistanceToNow(getPostedAt(), { addSuffix: true, locale: ptBR })}</p>
                                 </div>
                             </div>
                         </CardContent>

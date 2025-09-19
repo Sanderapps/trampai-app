@@ -26,6 +26,49 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
+// Helper function to resize and optimize image
+const resizeImage = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 200;
+        const MAX_HEIGHT = 200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          return reject(new Error('Could not get canvas context'));
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+
+        resolve(canvas.toDataURL('image/jpeg', 0.8)); // 80% quality JPEG
+      };
+      img.onerror = (error) => reject(error);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 
 export default function CandidateProfilePage() {
   const { user, loading, reloadUserData } = useAuth();
@@ -90,19 +133,21 @@ export default function CandidateProfilePage() {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
-    if (file.size > 1024 * 1024) { // 1MB limit
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit before optimization
         toast({
             variant: "destructive",
             title: "Arquivo muito grande",
-            description: "A foto de perfil deve ter no máximo 1MB.",
+            description: "A foto de perfil deve ter no máximo 5MB.",
         });
         return;
     }
 
     try {
-        const base64Photo = await fileToBase64(file);
-        await updateProfile(auth.currentUser!, { photoURL: base64Photo });
-        setPhotoUrl(base64Photo);
+        toast({ title: "Otimizando imagem..."});
+        const resizedPhoto = await resizeImage(file);
+        
+        await updateProfile(auth.currentUser!, { photoURL: resizedPhoto });
+        setPhotoUrl(resizedPhoto);
         reloadUserData(); // Refresh user data in context
         toast({
             title: "Foto de perfil atualizada!",

@@ -12,7 +12,9 @@ import {
   Building,
   ArrowLeft,
   Share2,
-  Heart
+  Heart,
+  Gift,
+  Check,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -118,6 +120,22 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
     }
     return new Date(); // Fallback
   }
+  
+  const benefitList = job.benefits ? Object.entries(job.benefits)
+    .filter(([key, value]) => value === true)
+    .map(([key]) => {
+        switch(key) {
+            case 'hasCommission': return 'Comissão';
+            case 'hasVT': return 'Vale-transporte (VT)';
+            case 'hasVR': return 'Vale-refeição (VR)';
+            case 'hasVA': return 'Vale-alimentação (VA)';
+            case 'hasHealthPlan': return 'Plano de Saúde';
+            default: return null;
+        }
+    }).filter(Boolean) : [];
+
+  const hasBenefits = benefitList.length > 0 || (job.benefits?.others && job.benefits.others.length > 0);
+
 
   return (
     <div className="bg-muted/30">
@@ -132,7 +150,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
             </div>
 
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-                <div className="md:col-span-2">
+                <div className="md:col-span-2 space-y-6">
                     <Card>
                         <CardHeader>
                             <div className="flex items-start justify-between">
@@ -161,6 +179,33 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {hasBenefits && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-xl">
+                                    <Gift className="h-5 w-5 text-primary" />
+                                    Benefícios
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    {benefitList.map(benefit => (
+                                        <li key={benefit} className="flex items-center gap-2">
+                                            <Check className="h-4 w-4 text-green-500" />
+                                            <span>{benefit}</span>
+                                        </li>
+                                    ))}
+                                    {job.benefits?.others && (
+                                        <li className="flex items-center gap-2">
+                                            <Check className="h-4 w-4 text-green-500" />
+                                            <span>{job.benefits.others}</span>
+                                        </li>
+                                    )}
+                                </ul>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
 
                 <div className="space-y-6">

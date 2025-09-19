@@ -27,6 +27,14 @@ export type Job = {
     email: string;
     whatsapp: string;
   };
+  benefits?: {
+    hasCommission: boolean;
+    hasVT: boolean;
+    hasVR: boolean;
+    hasVA: boolean;
+    hasHealthPlan: boolean;
+    others?: string;
+  };
 };
 
 export type Application = {

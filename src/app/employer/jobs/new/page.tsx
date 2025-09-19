@@ -19,6 +19,7 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { companies } from '@/lib/data';
 import Link from 'next/link';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const jobSchema = z.object({
   jobTitle: z.string().min(3, 'Título da vaga é obrigatório'),
@@ -29,6 +30,14 @@ const jobSchema = z.object({
   salaryMin: z.coerce.number().optional(),
   salaryMax: z.coerce.number().optional(),
   dailyRate: z.coerce.number().optional(),
+  benefits: z.object({
+    hasCommission: z.boolean().default(false),
+    hasVT: z.boolean().default(false),
+    hasVR: z.boolean().default(false),
+    hasVA: z.boolean().default(false),
+    hasHealthPlan: z.boolean().default(false),
+    others: z.string().optional(),
+  }).default({}),
 });
 
 type JobFormValues = z.infer<typeof jobSchema>;
@@ -41,6 +50,16 @@ export default function NewJobPage() {
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm<JobFormValues>({
     resolver: zodResolver(jobSchema),
+     defaultValues: {
+      benefits: {
+        hasCommission: false,
+        hasVT: false,
+        hasVR: false,
+        hasVA: false,
+        hasHealthPlan: false,
+        others: '',
+      },
+    },
   });
 
   useEffect(() => {
@@ -110,6 +129,7 @@ export default function NewJobPage() {
             employerId: user.uid,
             salary: (data.salaryMin && data.salaryMax) ? { min: data.salaryMin, max: data.salaryMax } : null,
             dailyRate: data.dailyRate || null,
+            benefits: data.benefits,
         };
 
         await addDoc(collection(db, 'jobs'), jobData);
@@ -219,6 +239,37 @@ export default function NewJobPage() {
                   </div>
                 </div>
             )}
+
+            <div className="space-y-4">
+              <Label>Benefícios</Label>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="hasCommission" {...register('benefits.hasCommission')} />
+                  <Label htmlFor="hasCommission">Comissão</Label>
+                </div>
+                 <div className="flex items-center space-x-2">
+                  <Checkbox id="hasVT" {...register('benefits.hasVT')} />
+                  <Label htmlFor="hasVT">Vale-transporte (VT)</Label>
+                </div>
+                 <div className="flex items-center space-x-2">
+                  <Checkbox id="hasVR" {...register('benefits.hasVR')} />
+                  <Label htmlFor="hasVR">Vale-refeição (VR)</Label>
+                </div>
+                 <div className="flex items-center space-x-2">
+                  <Checkbox id="hasVA" {...register('benefits.hasVA')} />
+                  <Label htmlFor="hasVA">Vale-alimentação (VA)</Label>
+                </div>
+                 <div className="flex items-center space-x-2">
+                  <Checkbox id="hasHealthPlan" {...register('benefits.hasHealthPlan')} />
+                  <Label htmlFor="hasHealthPlan">Plano de Saúde</Label>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="benefits.others">Outros benefícios</Label>
+                <Input id="benefits.others" placeholder="Ex: 50% do plano, Auxílio-creche" {...register('benefits.others')} />
+              </div>
+            </div>
+
 
             <div className="flex justify-end pt-4">
                 <Button type="submit" size="lg" disabled={isSubmitting}>

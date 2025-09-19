@@ -65,11 +65,12 @@ export type UserProfile = {
   phone?: string;
   location?: string;
   linkedinUrl?: string;
-  experience?: string;
+  experience?: string; // Will store the JSON string of experiences
   skills?: string;
-  education?: string;
+  education?: string; // Will store the JSON string of education
   resumeText?: string;
   photoURL?: string;
+  summary?: string;
 }
 
 // Defines a single message in the conversation history for the conversational resume AI
@@ -79,16 +80,33 @@ export const ConversationMessageSchema = z.object({
 });
 export type ConversationMessage = z.infer<typeof ConversationMessageSchema>;
 
+
+// Zod schemas for structured data
+export const ExperienceSchema = z.object({
+    role: z.string().optional().describe("The job title or role."),
+    company: z.string().optional().describe("The name of the company."),
+    startDate: z.string().optional().describe("The start date of the employment (e.g., 'MM/AAAA')."),
+    endDate: z.string().optional().describe("The end date of the employment (e.g., 'MM/AAAA' or 'Atual')."),
+});
+export type Experience = z.infer<typeof ExperienceSchema>;
+
+export const EducationSchema = z.object({
+    course: z.string().optional().describe("The name of the course or degree."),
+    institution: z.string().optional().describe("The name of the educational institution."),
+    endDate: z.string().optional().describe("The end date or year of conclusion."),
+});
+export type Education = z.infer<typeof EducationSchema>;
+
+
 // Defines the data structure for the user's profile being built by the conversational AI
 export const ProfileDataSchema = z.object({
   name: z.string().optional().describe("The candidate's full name."),
-  address: z.string().optional().describe("The candidate's city and state (e.g., 'Porto Alegre, RS')."),
+  location: z.string().optional().describe("The candidate's city and state (e.g., 'Porto Alegre, RS')."),
   phone: z.string().optional().describe("The candidate's phone number."),
-  experiences: z.array(z.string()).optional().describe("A list of the candidate's work experiences."),
-  education: z.array(z.string()).optional().describe("A list of the candidate's educational background."),
-  skills: z.array(z.string()).optional().describe("A list of the candidate's skills."),
+  experiences: z.array(ExperienceSchema).optional().describe("A list of the candidate's work experiences."),
+  education: z.array(EducationSchema).optional().describe("A list of the candidate's educational background."),
+  skills: z.array(z.string()).optional().describe("A list of the candidate's skills, separated by commas."),
   summary: z.string().optional().describe("A brief summary about the candidate."),
 });
 export type ProfileData = z.infer<typeof ProfileDataSchema>;
-
     

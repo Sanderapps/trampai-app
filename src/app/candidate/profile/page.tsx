@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { conversationalResume } from "@/ai/flows/conversational-resume";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ConversationMessage } from "@/lib/types";
+import { ConversationMessage, ProfileData } from "@/lib/types";
 
 const chatSchema = z.object({
   message: z.string().min(1, "A mensagem não pode estar vazia."),
@@ -67,6 +66,39 @@ export default function CandidateProfilePage() {
     }
   };
   
+  const saveProfile = async (profileData: ProfileData) => {
+    if (!user || !userProfile) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.' });
+        return;
+    }
+    
+    try {
+        await updateProfile(user, { displayName: profileData.name });
+        const userDocRef = doc(db, 'users', user.uid);
+        
+        // Convert structured data to JSON strings for storage
+        const experienceString = profileData.experiences ? JSON.stringify(profileData.experiences) : '';
+        const educationString = profileData.education ? JSON.stringify(profileData.education) : '';
+        
+        await setDoc(userDocRef, {
+            ...userProfile,
+            displayName: profileData.name,
+            phone: profileData.phone,
+            location: profileData.location,
+            experience: experienceString,
+            education: educationString,
+            skills: profileData.skills?.join(', '),
+            summary: profileData.summary,
+        }, { merge: true });
+
+        await reloadUserData();
+        
+    } catch (error) {
+        console.error("Error saving profile:", error);
+        toast({ variant: 'destructive', title: 'Erro ao Salvar', description: 'Não foi possível salvar o seu perfil.' });
+    }
+  };
+
   const onSendMessage = async (data: ChatFormValues) => {
     const userMessage: ConversationMessage = { role: 'user', content: data.message };
     const newConversation = [...conversation, userMessage];
@@ -77,27 +109,13 @@ export default function CandidateProfilePage() {
     try {
         const result = await conversationalResume({ history: newConversation });
 
-        if (result.isFinished) {
+        if (result.isFinished && result.profile) {
             toast({ title: 'Currículo criado!', description: 'A IA finalizou a criação do seu currículo. Salvando perfil...' });
             
-            // Save data
-            if(user && userProfile) {
-                await updateProfile(user, { displayName: result.profile.name });
-                const userDocRef = doc(db, 'users', user.uid);
-                await setDoc(userDocRef, {
-                    ...userProfile,
-                    displayName: result.profile.name,
-                    phone: result.profile.phone,
-                    location: result.profile.address,
-                    experience: result.profile.experiences?.join('\n\n'),
-                    education: result.profile.education?.join('\n'),
-                    skills: result.profile.skills?.join(', '),
-                }, { merge: true });
-                reloadUserData();
-            }
+            await saveProfile(result.profile);
 
             setConversation(prev => [...prev, { role: 'model', content: result.nextQuestion }]);
-            setIsBuilding(false);
+            setIsBuilding(false); // End the building session
 
         } else {
             setConversation(prev => [...prev, { role: 'model', content: result.nextQuestion }]);
@@ -105,7 +123,8 @@ export default function CandidateProfilePage() {
 
     } catch (error) {
         console.error("Error during conversational resume:", error);
-        setConversation(prev => [...prev, { role: 'model', content: "Desculpe, ocorreu um erro. Vamos tentar de novo. Qual era a informação que estávamos discutindo?" }]);
+        const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
+        setConversation(prev => [...prev, { role: 'model', content: `Desculpe, ocorreu um erro: ${errorMessage}. Vamos tentar de novo. Qual era a informação que estávamos discutindo?` }]);
     } finally {
         setIsAiResponding(false);
         setTimeout(() => setFocus('message'), 100);
@@ -128,7 +147,7 @@ export default function CandidateProfilePage() {
     <div className="container mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
         <div>
             <h1 className="font-headline text-3xl font-bold">Meu Currículo</h1>
-            <p className="mt-1 text-muted-foreground">Use nosso assistente de IA para criar seu currículo de forma rápida e fácil.</p>
+            <p className="mt-1 text-muted-foreground">Use nosso assistente de IA para criar seu currículo de forma rápida e fácil, respondendo a algumas perguntas.</p>
         </div>
         
         <Card className="mt-8">
@@ -141,7 +160,7 @@ export default function CandidateProfilePage() {
             <CardContent>
                 {!isBuilding ? (
                     <div className="text-center p-8">
-                        <p className="mb-4">Pronto para criar seu currículo? A nossa IA vai te guiar com algumas perguntas.</p>
+                        <p className="mb-4">Pronto para criar ou atualizar seu currículo? A nossa IA vai te guiar com algumas perguntas.</p>
                         <Button onClick={startConversation}>
                             <Sparkles className="mr-2 h-4 w-4" />
                             Começar a criar

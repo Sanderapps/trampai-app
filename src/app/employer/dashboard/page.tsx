@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
-import { PlusCircle, Briefcase, Users, Eye, Trash2 } from 'lucide-react';
+import { PlusCircle, Briefcase, Users, Eye, Trash2, Pencil } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { useEffect, useState } from 'react';
 import { Job } from '@/lib/types';
@@ -13,6 +13,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type JobWithApplicantCount = Job & { applicantCount: number };
 
@@ -50,10 +56,14 @@ export default function EmployerDashboard() {
   }
 
   useEffect(() => {
-    if (!loading && userProfile && userProfile.accountType !== 'employer') {
-        router.push('/candidate/dashboard');
-    } else if (user) {
-        fetchEmployerJobs();
+    if (!loading) {
+        if (!user) {
+            router.push('/login');
+        } else if (userProfile && userProfile.accountType !== 'employer') {
+            router.push('/candidate/dashboard');
+        } else {
+            fetchEmployerJobs();
+        }
     }
   }, [user, userProfile, loading, router]);
   
@@ -108,108 +118,131 @@ export default function EmployerDashboard() {
 
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="flex flex-col items-start justify-between gap-4 border-b pb-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="font-headline text-3xl font-bold">Painel do Empregador</h1>
-          <p className="mt-1 text-muted-foreground">Gerencie suas vagas e candidaturas, {user.displayName}.</p>
+    <TooltipProvider>
+      <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="flex flex-col items-start justify-between gap-4 border-b pb-4 sm:flex-row sm:items-center">
+          <div>
+            <h1 className="font-headline text-3xl font-bold">Painel do Empregador</h1>
+            <p className="mt-1 text-muted-foreground">Gerencie suas vagas e candidaturas, {user.displayName}.</p>
+          </div>
+          <Button asChild>
+            <Link href="/employer/jobs/new">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Publicar Nova Vaga
+            </Link>
+          </Button>
         </div>
-        <Button asChild>
-          <Link href="/employer/jobs/new">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Publicar Nova Vaga
-          </Link>
-        </Button>
-      </div>
 
-      <div className="mt-8 grid gap-6 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vagas Ativas</CardTitle>
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{jobsLoading ? <Skeleton className='h-8 w-8'/> : totalActiveJobs}</div>
-            <p className="text-xs text-muted-foreground">
-              Vagas publicadas na plataforma
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Candidaturas</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{jobsLoading ? <Skeleton className='h-8 w-8'/> : totalApplicants}</div>
-            <p className="text-xs text-muted-foreground">
-              Recebidas em todas as suas vagas
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+        <div className="mt-8 grid gap-6 md:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Vagas Ativas</CardTitle>
+              <Briefcase className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{jobsLoading ? <Skeleton className='h-8 w-8'/> : totalActiveJobs}</div>
+              <p className="text-xs text-muted-foreground">
+                Vagas publicadas na plataforma
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total de Candidaturas</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{jobsLoading ? <Skeleton className='h-8 w-8'/> : totalApplicants}</div>
+              <p className="text-xs text-muted-foreground">
+                Recebidas em todas as suas vagas
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-      <div className="mt-10">
-        <h2 className="text-xl font-bold">Suas Vagas</h2>
-        {jobsLoading ? (
-            <div className='mt-4 grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
-                {[...Array(3)].map((_, i) => <Skeleton key={i} className='h-48 w-full' />)}
-            </div>
-        ) : jobs.length > 0 ? (
-            <div className='mt-4 grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
-                {jobs.map(job => (
-                    <Card key={job.id} className='flex flex-col'>
-                        <CardHeader>
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <CardTitle>{job.title}</CardTitle>
-                                    <CardDescription>{job.location}</CardDescription>
-                                </div>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                            <Trash2 className="h-4 w-4 text-destructive" />
+        <div className="mt-10">
+          <h2 className="text-xl font-bold">Suas Vagas</h2>
+          {jobsLoading ? (
+              <div className='mt-4 grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
+                  {[...Array(3)].map((_, i) => <Skeleton key={i} className='h-48 w-full' />)}
+              </div>
+          ) : jobs.length > 0 ? (
+              <div className='mt-4 grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
+                  {jobs.map(job => (
+                      <Card key={job.id} className='flex flex-col'>
+                          <CardHeader>
+                              <div className="flex justify-between items-start gap-2">
+                                  <div className='flex-1'>
+                                      <CardTitle>{job.title}</CardTitle>
+                                      <CardDescription>{job.location}</CardDescription>
+                                  </div>
+                                  <div className='flex'>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button asChild variant="ghost" size="icon">
+                                            <Link href={`/employer/jobs/${job.id}/edit`}>
+                                                <Pencil className="h-4 w-4" />
+                                            </Link>
                                         </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Esta ação não pode ser desfeita. Isso excluirá permanentemente a vaga
-                                            e todas as suas candidaturas.
-                                        </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteJob(job.id)}>Excluir</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        </CardHeader>
-                        <CardContent className='flex-grow'>
-                            <div className='flex items-center gap-2 text-muted-foreground'>
-                                <Users className='h-5 w-5' />
-                                <span className='text-lg font-bold'>{job.applicantCount}</span>
-                                <span>{job.applicantCount === 1 ? 'candidato' : 'candidatos'}</span>
-                            </div>
-                        </CardContent>
-                        <CardFooter>
-                            <Button asChild className='w-full' variant="secondary">
-                                <Link href={`/employer/jobs/${job.id}/applicants`}>
-                                    <Eye className='mr-2 h-4 w-4' /> Ver Candidatos
-                                </Link>
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                ))}
-            </div>
-        ) : (
-            <div className="mt-4 rounded-lg border border-dashed border-muted-foreground/50 p-8 text-center">
-            <p className="text-muted-foreground">Você ainda não publicou nenhuma vaga.</p>
-            </div>
-        )}
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                          <p>Editar vaga</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                    <AlertDialog>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                              <AlertDialogTrigger asChild>
+                                                  <Button variant="ghost" size="icon">
+                                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                                  </Button>
+                                              </AlertDialogTrigger>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                              <p>Excluir vaga</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Esta ação não pode ser desfeita. Isso excluirá permanentemente a vaga
+                                                e todas as suas candidaturas.
+                                            </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteJob(job.id)}>Excluir</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                              </div>
+                          </CardHeader>
+                          <CardContent className='flex-grow'>
+                              <div className='flex items-center gap-2 text-muted-foreground'>
+                                  <Users className='h-5 w-5' />
+                                  <span className='text-lg font-bold'>{job.applicantCount}</span>
+                                  <span>{job.applicantCount === 1 ? 'candidato' : 'candidatos'}</span>
+                              </div>
+                          </CardContent>
+                          <CardFooter>
+                              <Button asChild className='w-full' variant="secondary">
+                                  <Link href={`/employer/jobs/${job.id}/applicants`}>
+                                      <Eye className='mr-2 h-4 w-4' /> Ver Candidatos
+                                  </Link>
+                              </Button>
+                          </CardFooter>
+                      </Card>
+                  ))}
+              </div>
+          ) : (
+              <div className="mt-4 rounded-lg border border-dashed border-muted-foreground/50 p-8 text-center">
+              <p className="text-muted-foreground">Você ainda não publicou nenhuma vaga.</p>
+              </div>
+          )}
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }

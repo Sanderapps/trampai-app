@@ -4,7 +4,7 @@ import { notFound, useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { collection, doc, getDoc, getDocs, query, where, Timestamp } from 'firebase/firestore';
-import { ArrowLeft, Download, Eye, User, Phone, Mail, FileText, Briefcase, Sparkles, MapPin } from 'lucide-react';
+import { ArrowLeft, Download, Eye, User, Phone, Mail, FileText, Briefcase, Sparkles, MapPin, Share2 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { db } from '@/lib/firebase/client';
 import { Job, Application, UserProfile } from '@/lib/types';
@@ -241,9 +241,17 @@ export default function ApplicantsPage() {
                                 <h2 className="text-2xl font-bold">{selectedCandidate.displayName}</h2>
                                 <div className="flex flex-wrap gap-x-4 gap-y-2 text-muted-foreground">
                                     <span className='flex items-center gap-2'><Mail className='h-4 w-4'/>{selectedCandidate.email}</span>
-                                    {selectedCandidate.phone && <span className='flex items-center gap-2'><Phone className='h-4 w-4'/>{selectedCandidate.phone}</span>}
+                                    {selectedApplication?.candidatePhone && <span className='flex items-center gap-2'><Phone className='h-4 w-4'/>{selectedApplication.candidatePhone}</span>}
                                     {selectedCandidate.location && <span className='flex items-center gap-2'><MapPin className='h-4 w-4'/>{selectedCandidate.location}</span>}
                                 </div>
+                                {selectedApplication?.candidateSocialUrl && (
+                                     <div className="flex items-center gap-2 text-sm text-muted-foreground pt-1">
+                                        <Share2 className="h-4 w-4"/>
+                                        <a href={selectedApplication.candidateSocialUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                            {selectedApplication.candidateSocialUrl}
+                                        </a>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

@@ -26,7 +26,8 @@ const MAX_FILE_SIZE = 700 * 1024; // 700 KB
 const applySchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório'),
   email: z.string().email('E-mail inválido'),
-  phone: z.string().optional(),
+  phone: z.string().min(10, "Telefone é obrigatório."),
+  socialUrl: z.string().url("Por favor, insira uma URL válida.").optional().or(z.literal('')),
   resume: z.any()
     .refine(files => files?.length > 0, 'Currículo é obrigatório.')
     .refine(files => files?.[0]?.size <= MAX_FILE_SIZE, `O arquivo do currículo deve ter no máximo 700KB.`),
@@ -51,7 +52,7 @@ export default function ApplyPage() {
   const jobId = params.id as string;
   const router = useRouter();
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -60,11 +61,13 @@ export default function ApplyPage() {
   });
 
   useEffect(() => {
-    if (user) {
+    if (user && userProfile) {
         setValue('name', user.displayName || '');
         setValue('email', user.email || '');
+        setValue('phone', userProfile.phone || '');
+        setValue('socialUrl', userProfile.linkedinUrl || '');
     }
-  }, [user, setValue]);
+  }, [user, userProfile, setValue]);
 
    useEffect(() => {
     if (!jobId) return;
@@ -113,6 +116,8 @@ export default function ApplyPage() {
             candidateId: user.uid,
             candidateName: data.name,
             candidateEmail: data.email,
+            candidatePhone: data.phone,
+            candidateSocialUrl: data.socialUrl,
             resumeFile: {
                 name: resumeFile.name,
                 type: resumeFile.type,
@@ -179,23 +184,31 @@ export default function ApplyPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Candidatar-se para {job.title}</CardTitle>
-          <CardDescription>Preencha suas informações abaixo.</CardDescription>
+          <CardDescription>Preencha suas informações abaixo. Se seu perfil estiver completo, alguns dados serão preenchidos automaticamente.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo</Label>
-              <Input id="name" {...register('name')} />
-              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-            </div>
-             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" {...register('email')} disabled />
-              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-            </div>
-             <div className="space-y-2">
-              <Label htmlFor="phone">Telefone (Opcional)</Label>
-              <Input id="phone" type="tel" {...register('phone')} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                <Label htmlFor="name">Nome Completo</Label>
+                <Input id="name" {...register('name')} />
+                {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input id="email" type="email" {...register('email')} disabled />
+                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="phone">Telefone</Label>
+                <Input id="phone" type="tel" {...register('phone')} />
+                {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="socialUrl">Rede Social (LinkedIn, etc.)</Label>
+                <Input id="socialUrl" type="url" placeholder="https://linkedin.com/in/seu-perfil" {...register('socialUrl')} />
+                {errors.socialUrl && <p className="text-sm text-destructive">{errors.socialUrl.message}</p>}
+                </div>
             </div>
             <div className="space-y-2">
                 <Label htmlFor="resume">Currículo (PDF, DOC, DOCX - máx 700KB)</Label>

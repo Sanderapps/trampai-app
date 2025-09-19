@@ -41,6 +41,8 @@ export type Application = {
     candidateId: string;
     candidateName: string;
     candidateEmail: string;
+    candidatePhone?: string;
+    candidateSocialUrl?: string;
     resumeFile?: {
       name: string;
       type: string;

@@ -12,14 +12,6 @@ const firebaseConfig: FirebaseOptions = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Simple check to ensure all env variables are present
-const areAllConfigKeysPresent = Object.values(firebaseConfig).every(value => value);
-
-if (!areAllConfigKeysPresent) {
-  throw new Error("Firebase config environment variables are not fully set. Please check your .env file.");
-}
-
-
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);

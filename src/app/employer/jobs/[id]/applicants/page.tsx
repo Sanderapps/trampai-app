@@ -3,8 +3,8 @@
 import { notFound, useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { collection, doc, getDoc, getDocs, query, where, Timestamp } from 'firebase/firestore';
-import { ArrowLeft, Download, Eye, User, Phone, Mail, FileText, Briefcase, Sparkles, MapPin, Share2 } from 'lucide-react';
+import { collection, doc, getDoc, getDocs, query, where, Timestamp, updateDoc, writeBatch } from 'firebase/firestore';
+import { ArrowLeft, Download, Eye, User, Phone, Mail, FileText, Briefcase, Sparkles, MapPin, Share2, Star } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { db } from '@/lib/firebase/client';
 import { Job, Application, UserProfile } from '@/lib/types';
@@ -24,6 +24,7 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
+import { useToast } from '@/hooks/use-toast';
 
 function formatSocialUrl(url: string) {
     if (!url) return '';
@@ -44,6 +45,7 @@ export default function ApplicantsPage() {
   const params = useParams();
   const jobId = params.id as string;
   const { user, userProfile, loading: authLoading } = useAuth();
+  const { toast } = useToast();
   const [job, setJob] = useState<Job | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,22 +55,16 @@ export default function ApplicantsPage() {
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalLoading, setIsModalLoading] = useState(false);
+  const [hiredCandidateId, setHiredCandidateId] = useState<string | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!user) return;
-      
-      if (userProfile && userProfile.accountType !== 'employer') {
-        router.push('/candidate/dashboard');
-        return;
-      }
-
+  const fetchJobAndApplicants = async (userId: string) => {
       setLoading(true);
       try {
         const jobDocRef = doc(db, 'jobs', jobId);
         const jobDoc = await getDoc(jobDocRef);
 
-        if (!jobDoc.exists() || jobDoc.data().employerId !== user.uid) {
+        if (!jobDoc.exists() || jobDoc.data().employerId !== userId) {
           notFound();
           return;
         }
@@ -80,6 +76,11 @@ export default function ApplicantsPage() {
         const appList = appSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Application));
         setApplications(appList);
 
+        const hiredApp = appList.find(app => app.status === 'Contratado');
+        if (hiredApp) {
+          setHiredCandidateId(hiredApp.candidateId);
+        }
+
       } catch (error) {
         console.error("Error fetching job and applicants:", error);
         notFound();
@@ -88,14 +89,59 @@ export default function ApplicantsPage() {
       }
     };
 
+
+  useEffect(() => {
     if (!authLoading) {
       if (user) {
-        fetchData();
+        if (userProfile && userProfile.accountType !== 'employer') {
+            router.push('/candidate/dashboard');
+            return;
+        }
+        fetchJobAndApplicants(user.uid);
       } else {
         router.push('/login');
       }
     }
   }, [jobId, user, userProfile, authLoading, router]);
+
+  const handleHireCandidate = async (applicationToHire: Application) => {
+    if (hiredCandidateId || isUpdatingStatus) return; // Prevent multiple hires
+
+    setIsUpdatingStatus(true);
+    const batch = writeBatch(db);
+
+    // 1. Update the hired candidate's status
+    const hiredAppRef = doc(db, 'applications', applicationToHire.id);
+    batch.update(hiredAppRef, { status: 'Contratado' });
+
+    // 2. Update other candidates' status
+    applications.forEach(app => {
+      if (app.id !== applicationToHire.id && app.status === 'Em Análise') {
+        const appRef = doc(db, 'applications', app.id);
+        batch.update(appRef, { status: 'Vaga Preenchida' });
+      }
+    });
+
+    try {
+      await batch.commit();
+      toast({
+        title: "Candidato Contratado!",
+        description: `${applicationToHire.candidateName} foi marcado como contratado para esta vaga.`,
+      });
+      // Refresh data locally to reflect status changes
+      if(user) fetchJobAndApplicants(user.uid);
+    } catch (error) {
+      console.error("Error hiring candidate: ", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao contratar",
+        description: "Não foi possível atualizar o status dos candidatos.",
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
 
   const handleViewProfile = async (application: Application) => {
     setSelectedApplication(application);
@@ -106,14 +152,6 @@ export default function ApplicantsPage() {
       const userDoc = await getDoc(userDocRef);
       if (userDoc.exists()) {
         const candidateData = userDoc.data() as UserProfile;
-        // Fetch the latest photoURL from the auth user object if available
-        // This is a placeholder, in a real app you might need a server function to get this securely
-        const authUserSnap = await getDoc(doc(db, 'users', application.candidateId));
-        if(authUserSnap.exists()) {
-            const authUserData = authUserSnap.data();
-             // This is a simplification. In a real app, the user's photoURL should be stored with their profile.
-        }
-
         setSelectedCandidate(candidateData);
       }
     } catch (error) {
@@ -127,16 +165,6 @@ export default function ApplicantsPage() {
       if (!timestamp) return 'Data indisponível';
       return new Timestamp(timestamp.seconds, timestamp.nanoseconds).toDate().toLocaleDateString('pt-BR');
   }
-
-  const handleDownload = (app: Application) => {
-    if (!app.resumeFile) return;
-    const link = document.createElement('a');
-    link.href = app.resumeFile.data;
-    link.download = app.resumeFile.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   if (loading || authLoading) {
     return (
@@ -161,6 +189,15 @@ export default function ApplicantsPage() {
   if (!job) {
     return notFound();
   }
+  
+  const getBadgeVariant = (status: Application['status']) => {
+    switch (status) {
+      case 'Contratado': return 'default';
+      case 'Rejeitado': return 'destructive';
+      case 'Vaga Preenchida': return 'secondary';
+      default: return 'outline';
+    }
+  };
 
   const cleanPhoneNumber = formatPhoneNumberForLink(selectedApplication?.candidatePhone || '');
 
@@ -200,24 +237,27 @@ export default function ApplicantsPage() {
                       <div className="text-sm text-muted-foreground">{app.candidateEmail}</div>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">{getAppliedDate(app.appliedAt)}</TableCell>
-                    <TableCell className="hidden md:table-cell"><Badge>{app.status}</Badge></TableCell>
+                    <TableCell className="hidden md:table-cell">
+                        <Badge variant={getBadgeVariant(app.status)}>{app.status}</Badge>
+                    </TableCell>
                     <TableCell className="text-right space-x-2">
                        <Button 
                           variant="outline" 
                           size="sm"
                           onClick={() => handleViewProfile(app)}
+                          disabled={isUpdatingStatus}
                         >
                           <Eye className="mr-2 h-4 w-4"/>
                           Ver Perfil
                        </Button>
                        <Button 
-                          variant="outline" 
+                          variant="secondary"
                           size="sm"
-                          disabled={!app.resumeFile}
-                          onClick={() => handleDownload(app)}
+                          onClick={() => handleHireCandidate(app)}
+                          disabled={!!hiredCandidateId || isUpdatingStatus}
                         >
-                          <Download className="mr-2 h-4 w-4"/>
-                          Currículo
+                            <Star className="mr-2 h-4 w-4" />
+                            {hiredCandidateId === app.candidateId ? "Contratado" : "Contratar"}
                        </Button>
                     </TableCell>
                   </TableRow>
@@ -252,7 +292,6 @@ export default function ApplicantsPage() {
                     <div className="space-y-6">
                         <div className="flex flex-col sm:flex-row items-start gap-6">
                              <Avatar className="h-24 w-24 border-2 border-primary">
-                                {/* In a real app, you would get the photoURL from the user profile */}
                                 <AvatarFallback className="text-3xl">{selectedCandidate.displayName?.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div className='flex-1 space-y-2'>
@@ -262,11 +301,11 @@ export default function ApplicantsPage() {
                                     {selectedApplication?.candidatePhone && <span className='flex items-center gap-2'><Phone className='h-4 w-4'/>{selectedApplication.candidatePhone}</span>}
                                     {selectedCandidate.location && <span className='flex items-center gap-2'><MapPin className='h-4 w-4'/>{selectedCandidate.location}</span>}
                                 </div>
-                                {selectedApplication?.candidateSocialUrl && (
+                                {selectedCandidate.linkedinUrl && (
                                      <div className="flex items-center gap-2 text-sm text-muted-foreground pt-1">
                                         <Share2 className="h-4 w-4"/>
-                                        <a href={formatSocialUrl(selectedApplication.candidateSocialUrl)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                                            {selectedApplication.candidateSocialUrl}
+                                        <a href={formatSocialUrl(selectedCandidate.linkedinUrl)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                            {selectedCandidate.linkedinUrl}
                                         </a>
                                     </div>
                                 )}

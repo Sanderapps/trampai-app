@@ -58,6 +58,16 @@ export default function CandidateDashboard() {
       return new Timestamp(timestamp.seconds, timestamp.nanoseconds).toDate().toLocaleDateString('pt-BR');
   }
 
+  const getBadgeVariant = (status: Application['status']) => {
+    switch (status) {
+      case 'Contratado': return 'default';
+      case 'Rejeitado': return 'destructive';
+      case 'Vaga Preenchida': return 'secondary';
+      default: return 'outline';
+    }
+  };
+
+
   return (
     <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       <h1 className="font-headline text-3xl font-bold">Minhas Candidaturas</h1>
@@ -77,7 +87,7 @@ export default function CandidateDashboard() {
                   <CardDescription>{app.companyName}</CardDescription>
                 </div>
                 <div className="flex items-center">
-                    <Badge>{app.status}</Badge>
+                    <Badge variant={getBadgeVariant(app.status)}>{app.status}</Badge>
                 </div>
                 <div className="flex items-center justify-start sm:justify-end text-sm text-muted-foreground">
                   Candidatura enviada em {getAppliedDate(app.appliedAt)}

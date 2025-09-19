@@ -50,7 +50,7 @@ export type Application = {
     }
     coverLetter?: string;
     appliedAt: Timestamp;
-    status: 'Em Análise' | 'Visualizado' | 'Rejeitado';
+    status: 'Em Análise' | 'Visualizado' | 'Rejeitado' | 'Contratado' | 'Vaga Preenchida';
 }
 
 export type UserProfile = {

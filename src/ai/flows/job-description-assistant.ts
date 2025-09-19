@@ -35,9 +35,9 @@ const prompt = ai.definePrompt({
   name: 'jobDescriptionAssistantPrompt',
   input: {schema: JobDescriptionAssistantInputSchema},
   output: {schema: JobDescriptionAssistantOutputSchema},
-  prompt: `Você é um assistente de IA especialista em criar descrições de vagas simples e diretas para o mercado brasileiro.
+  prompt: `Você é um assistente de IA especialista em criar descrições de vagas que sejam claras, objetivas e atraentes para o mercado brasileiro.
 
-Sua tarefa é gerar uma descrição de vaga em português do Brasil que seja muito clara, objetiva e fácil de entender.
+Sua tarefa é gerar uma descrição de vaga em português do Brasil bem estruturada e profissional.
 
 Use o título da vaga e as palavras-chave fornecidas como base.
 
@@ -46,9 +46,14 @@ Use o título da vaga e as palavras-chave fornecidas como base.
 
 **Instruções:**
 1.  **Idioma:** A descrição DEVE ser em português do Brasil.
-2.  **Simplicidade:** Use uma linguagem extremamente simples e direta. Evite termos complexos ou jargões de mercado.
-3.  **Estrutura:** Organize a descrição em apenas duas seções: "Responsabilidades" e "Qualificações". Use listas simples (com marcadores) para cada seção.
-4.  **Conteúdo:** Detalhe as principais atividades e os requisitos essenciais para a função, baseando-se nas palavras-chave. Seja breve e vá direto ao ponto.
+2.  **Tom:** Use um tom profissional, mas acessível e convidativo.
+3.  **Estrutura:** Organize a descrição nas seguintes seções, usando títulos em negrito (markdown):
+    *   **Descrição da Posição:** Um parágrafo breve e envolvente sobre a vaga.
+    *   **Responsabilidades:** Uma lista clara (bullet points) das principais tarefas e deveres.
+    *   **Qualificações:** Uma lista (bullet points) com os requisitos essenciais (habilidades técnicas, experiência).
+    *   **Diferenciais:** Uma lista (bullet points) com qualificações desejáveis, mas não obrigatórias.
+4.  **Clareza:** Seja específico sobre as responsabilidades e qualificações, baseando-se nas palavras-chave fornecidas.
+5.  **Formato:** Use markdown para formatar a saída (negrito para títulos e listas para os itens).
 
 **Descrição da Vaga Gerada:**`,
 });

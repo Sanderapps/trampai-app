@@ -1,8 +1,8 @@
 import { Company } from './types';
-import { PlaceHolderImages } from './placeholder-images';
+import placeholderData from './placeholder-images.json';
 
 const getCompanyLogo = (seed: number) => {
-    const logo = PlaceHolderImages.find(img => img.imageUrl.includes(`seed/logo${seed}`));
+    const logo = placeholderData.placeholderImages.find(img => img.imageUrl.includes(`seed/logo${seed}`));
     return {
         url: logo?.imageUrl ?? `https://picsum.photos/seed/logo${seed}/100/100`,
         hint: logo?.imageHint ?? 'abstract logo'

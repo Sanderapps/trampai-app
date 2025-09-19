@@ -18,7 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { JobCard } from '@/components/jobs/job-card';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import placeholderData from '@/lib/placeholder-images.json';
 import { Card, CardContent } from '@/components/ui/card';
 import { useEffect, useState } from 'react';
 import { Job } from '@/lib/types';
@@ -26,7 +26,7 @@ import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-bg');
+const heroImage = placeholderData.placeholderImages.find((img) => img.id === 'hero-bg');
 
 const categories = [
   { name: 'Restaurantes', icon: UtensilsCrossed, slug: 'restaurantes' },

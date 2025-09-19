@@ -1,15 +1,33 @@
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { PlusCircle, Briefcase, Users } from 'lucide-react';
+import { useAuth } from '@/contexts/auth-context';
 
 export default function EmployerDashboard() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">Carregando...</div>;
+  }
+
+  if (!user) {
+    return <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <h1 className="font-headline text-3xl font-bold">Acesso Negado</h1>
+      <p className="mt-1 text-muted-foreground">Você precisa estar logado para ver seu painel de empregador.</p>
+      <Link href="/login" className="mt-4 inline-block text-primary underline">Fazer Login</Link>
+    </div>
+  }
+
+
   return (
     <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="flex flex-col items-start justify-between gap-4 border-b pb-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-headline text-3xl font-bold">Painel do Empregador</h1>
-          <p className="mt-1 text-muted-foreground">Gerencie suas vagas e candidaturas.</p>
+          <p className="mt-1 text-muted-foreground">Gerencie suas vagas e candidaturas, {user.displayName}.</p>
         </div>
         <Button asChild>
           <Link href="/employer/jobs/new">

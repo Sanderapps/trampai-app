@@ -1,16 +1,31 @@
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+'use client';
+
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { jobs } from "@/lib/data";
 import Link from "next/link";
-import { Eye } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function CandidateDashboard() {
+  const { user, loading } = useAuth();
   const appliedJobs = jobs.slice(0, 2); // Mock data
+
+  if (loading) {
+    return <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">Carregando...</div>;
+  }
+
+  if (!user) {
+     return <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+      <h1 className="font-headline text-3xl font-bold">Acesso Negado</h1>
+      <p className="mt-1 text-muted-foreground">Você precisa estar logado para ver seu painel.</p>
+      <Link href="/login" className="mt-4 inline-block text-primary underline">Fazer Login</Link>
+    </div>
+  }
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       <h1 className="font-headline text-3xl font-bold">Minhas Candidaturas</h1>
-      <p className="mt-1 text-muted-foreground">Acompanhe o status das suas candidaturas.</p>
+      <p className="mt-1 text-muted-foreground">Acompanhe o status das suas candidaturas, {user.displayName}.</p>
 
       <div className="mt-8 space-y-6">
         {appliedJobs.map(job => (

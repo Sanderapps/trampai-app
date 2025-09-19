@@ -5,6 +5,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth } from '@/lib/firebase/client';
 
 import { Button } from '@/components/ui/button'
 import {
@@ -34,24 +36,41 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 export default function SignupPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const { register, handleSubmit, formState: { errors, isSubmitting }, watch } = useForm<SignupFormValues>({
+    const { register, handleSubmit, formState: { errors, isSubmitting }, setValue } = useForm<SignupFormValues>({
         resolver: zodResolver(signupSchema)
     });
-    const accountType = watch('accountType');
 
     const onSubmit = async (data: SignupFormValues) => {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        console.log(data);
-        
-        toast({
-            title: "Cadastro realizado com sucesso!",
-            description: "Sua conta foi criada.",
-        });
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+            await updateProfile(userCredential.user, {
+                displayName: data.name
+            });
 
-        if (data.accountType === 'candidate') {
-            router.push('/candidate/dashboard');
-        } else {
-            router.push('/employer/dashboard');
+            // Here you could also save the accountType to Firestore or another database
+            // associated with the user's UID (userCredential.user.uid)
+
+            toast({
+                title: "Cadastro realizado com sucesso!",
+                description: "Sua conta foi criada.",
+            });
+
+            if (data.accountType === 'candidate') {
+                router.push('/candidate/dashboard');
+            } else {
+                router.push('/employer/dashboard');
+            }
+        } catch (error: any) {
+            console.error("Firebase Signup Error:", error);
+            let description = "Ocorreu um erro ao criar sua conta. Tente novamente.";
+            if (error.code === 'auth/email-already-in-use') {
+                description = "Este e-mail já está em uso. Tente fazer login ou use outro e-mail.";
+            }
+            toast({
+                variant: "destructive",
+                title: "Erro no cadastro",
+                description: description,
+            });
         }
     };
 
@@ -89,7 +108,10 @@ export default function SignupPage() {
 
             <div className="grid gap-2">
                 <Label>Tipo de conta</Label>
-                 <RadioGroup onValueChange={(value) => register('accountType').onChange({ target: { value } })} className="flex">
+                 <RadioGroup 
+                    onValueChange={(value) => setValue('accountType', value as 'candidate' | 'employer', { shouldValidate: true })} 
+                    className="flex"
+                  >
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="candidate" id="candidate" />
                         <Label htmlFor="candidate">Sou candidato</Label>
@@ -106,7 +128,7 @@ export default function SignupPage() {
             <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? 'Criando conta...' : 'Criar conta'}
             </Button>
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" type="button">
                 Cadastrar com Google
             </Button>
             </form>

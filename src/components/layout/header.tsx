@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Briefcase, Building, Menu, X } from 'lucide-react';
+import { Briefcase, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -10,6 +10,16 @@ import {
   SheetHeader,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { useAuth } from '@/contexts/auth-context';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const navLinks = [
   { href: '/jobs', label: 'Vagas' },
@@ -18,6 +28,17 @@ const navLinks = [
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, loading, signOut } = useAuth();
+  const userInitial = user?.displayName?.charAt(0) ?? '';
+
+  const getDashboardLink = () => {
+    // This is a simplification. In a real app, you'd have user roles.
+    // We'll arbitrarily decide based on where they logged in from, but
+    // a real implementation would have this info in the user profile.
+    // For now, let's just default to candidate dashboard.
+    return '/candidate/dashboard';
+  }
+
 
   return (
     <header
@@ -43,12 +64,48 @@ export function Header() {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
-          <Button variant="ghost" asChild>
-            <Link href="/login">Entrar</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/signup">Cadastrar</Link>
-          </Button>
+          {loading ? (
+            <div className="h-10 w-24 animate-pulse rounded-md bg-muted"></div>
+          ) : user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar>
+                    <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? ''} />
+                    <AvatarFallback>{userInitial}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href={getDashboardLink()}>Painel</Link>
+                </DropdownMenuItem>
+                 <DropdownMenuItem asChild>
+                    <Link href="/candidate/profile">Meu Perfil</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut}>
+                  Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Button variant="ghost" asChild>
+                <Link href="/login">Entrar</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/signup">Cadastrar</Link>
+              </Button>
+            </>
+          )}
         </div>
 
         <div className="md:hidden">
@@ -82,13 +139,23 @@ export function Header() {
                   </Link>
                 ))}
               </div>
-              <div className="mt-8 flex flex-col gap-2">
-                 <Button variant="ghost" asChild>
-                    <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Entrar</Link>
-                </Button>
-                <Button asChild>
-                    <Link href="/signup" onClick={() => setIsMobileMenuOpen(false)}>Cadastrar</Link>
-                </Button>
+              <div className="mt-8 flex flex-col gap-2 border-t pt-6">
+                 {user ? (
+                   <>
+                    <Link href={getDashboardLink()} className='px-3 py-2 text-base font-medium' onClick={() => setIsMobileMenuOpen(false)}>Painel</Link>
+                    <Link href="/candidate/profile" className='px-3 py-2 text-base font-medium' onClick={() => setIsMobileMenuOpen(false)}>Meu Perfil</Link>
+                    <Button variant="ghost" onClick={() => {signOut(); setIsMobileMenuOpen(false);}}>Sair</Button>
+                   </>
+                 ) : (
+                   <>
+                    <Button variant="ghost" asChild>
+                        <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Entrar</Link>
+                    </Button>
+                    <Button asChild>
+                        <Link href="/signup" onClick={() => setIsMobileMenuOpen(false)}>Cadastrar</Link>
+                    </Button>
+                   </>
+                 )}
               </div>
             </SheetContent>
           </Sheet>

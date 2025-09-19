@@ -17,6 +17,8 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase/client';
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -29,22 +31,36 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
+  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = async (data: LoginFormValues) => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log(data);
-    
-    toast({
-      title: 'Login bem-sucedido!',
-    });
+    try {
+      await signInWithEmailAndPassword(auth, data.email, data.password);
+      
+      toast({
+        title: 'Login bem-sucedido!',
+      });
 
-    if (data.accountType === 'candidate') {
-      router.push('/candidate/dashboard');
-    } else {
-      router.push('/employer/dashboard');
+      // In a real app, you would fetch user profile data to confirm account type
+      // before redirecting. For this example, we'll trust the user's selection.
+      if (data.accountType === 'candidate') {
+        router.push('/candidate/dashboard');
+      } else {
+        router.push('/employer/dashboard');
+      }
+    } catch (error: any) {
+        console.error("Firebase Login Error:", error);
+        let description = "Ocorreu um erro ao fazer login. Verifique seu e-mail e senha.";
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            description = "E-mail ou senha inválidos.";
+        }
+        toast({
+            variant: "destructive",
+            title: "Erro no login",
+            description: description,
+        });
     }
   };
 
@@ -82,7 +98,10 @@ export default function LoginPage() {
             
             <div className="grid gap-2">
                 <Label>Acessar como</Label>
-                <RadioGroup onValueChange={(value) => register('accountType').onChange({ target: { value } })} className="flex">
+                <RadioGroup 
+                    onValueChange={(value) => setValue('accountType', value as 'candidate' | 'employer', { shouldValidate: true })} 
+                    className="flex"
+                  >
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="candidate" id="candidate" />
                         <Label htmlFor="candidate">Candidato</Label>
@@ -98,7 +117,7 @@ export default function LoginPage() {
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Entrando...' : 'Entrar'}
             </Button>
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" type="button">
               Entrar com Google
             </Button>
           </form>

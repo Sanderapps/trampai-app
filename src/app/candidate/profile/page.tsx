@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -137,7 +138,7 @@ export default function CandidateProfilePage() {
       
       setValue("name", result.name || user?.displayName, { shouldValidate: true });
       setValue("phone", result.phone, { shouldValidate: true });
-      setValue("experience", result.experience.join('\\n\\n'));
+      setValue("experience", result.experience.join('\n\n'));
       setValue("skills", result.skills.join(', '));
       // Education is not a field yet, but we could add it.
       
@@ -230,39 +231,16 @@ export default function CandidateProfilePage() {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="flex flex-col items-center gap-6 sm:flex-row">
-        <div className="relative">
-            <Avatar className="h-24 w-24 border-2 border-primary">
-                <AvatarImage src={photoUrl ?? undefined} alt={user.displayName ?? ""} />
-                <AvatarFallback className="text-3xl">{user.displayName?.charAt(0)}</AvatarFallback>
-            </Avatar>
-             <Button 
-                variant="outline"
-                size="icon"
-                className="absolute bottom-0 right-0 rounded-full"
-                onClick={() => fileInputRef.current?.click()}
-             >
-                <Camera className="h-4 w-4" />
-             </Button>
-             <Input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                accept="image/png, image/jpeg"
-                onChange={handlePhotoUpload}
-            />
-        </div>
         <div>
-            <h1 className="font-headline text-3xl font-bold">{user.displayName}</h1>
-            <p className="mt-1 text-muted-foreground">Mantenha seus dados atualizados para aumentar suas chances.</p>
+            <h1 className="font-headline text-3xl font-bold">Meu Currículo</h1>
+            <p className="mt-1 text-muted-foreground">Mantenha seu currículo atualizado para aumentar suas chances de encontrar o trampo ideal.</p>
         </div>
-      </div>
       
       <form onSubmit={handleSubmit(onSubmit)}>
         <Card className="mt-8">
             <CardHeader>
-                <CardTitle>Currículo</CardTitle>
-                <CardDescription>Cole o texto do seu currículo aqui. Nossa IA pode usá-lo para preencher seu perfil automaticamente.</CardDescription>
+                <CardTitle>Comece pela IA</CardTitle>
+                <CardDescription>Para agilizar, cole o texto do seu currículo abaixo e deixe nossa IA preencher os campos para você.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Textarea placeholder="Cole o conteúdo do seu currículo aqui..." rows={12} {...register("resumeText")} />
@@ -270,7 +248,7 @@ export default function CandidateProfilePage() {
             <CardFooter className="flex justify-end">
                 <Button type="button" onClick={handleAutofill} disabled={isParsing}>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    {isParsing ? 'Analisando...' : 'Preencher perfil com IA'}
+                    {isParsing ? 'Analisando...' : 'Preencher com IA'}
                 </Button>
             </CardFooter>
         </Card>
@@ -278,30 +256,56 @@ export default function CandidateProfilePage() {
         <Card className="mt-8">
           <CardHeader>
             <CardTitle>Informações Pessoais</CardTitle>
-            <CardDescription>Seus dados de contato e informações básicas.</CardDescription>
+            <CardDescription>Seus dados de contato e informações básicas. Comece pela sua foto.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-6 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo</Label>
-              <Input id="name" {...register("name")} />
-              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" {...register("email")} disabled />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
-              <Input id="phone" type="tel" placeholder="(51) 91234-5678" {...register("phone")} />
-              {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="location">Localização (Opcional)</Label>
-              <Input id="location" placeholder="Porto Alegre, RS" {...register("location")} />
-            </div>
-             <div className="sm:col-span-2 space-y-2">
-              <Label htmlFor="linkedinUrl">LinkedIn (Opcional)</Label>
-              <Input id="linkedinUrl" type="text" placeholder="linkedin.com/in/seu-perfil" {...register("linkedinUrl")} />
+          <CardContent className="grid gap-6">
+             <div className="flex items-center gap-4">
+                <div className="relative">
+                    <Avatar className="h-24 w-24 border-2 border-primary">
+                        <AvatarImage src={photoUrl ?? undefined} alt={user.displayName ?? ""} />
+                        <AvatarFallback className="text-3xl">{user.displayName?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <Button 
+                        variant="outline"
+                        size="icon"
+                        type="button"
+                        className="absolute bottom-0 right-0 rounded-full"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <Camera className="h-4 w-4" />
+                    </Button>
+                    <Input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        accept="image/png, image/jpeg"
+                        onChange={handlePhotoUpload}
+                    />
+                </div>
+                 <div className="w-full space-y-2">
+                    <Label htmlFor="name">Nome Completo</Label>
+                    <Input id="name" {...register("name")} />
+                    {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+                </div>
+             </div>
+            <div className="grid gap-6 sm:grid-cols-2">
+                <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" {...register("email")} disabled />
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="phone">Telefone</Label>
+                <Input id="phone" type="tel" placeholder="(51) 91234-5678" {...register("phone")} />
+                {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="location">Localização (Opcional)</Label>
+                <Input id="location" placeholder="Porto Alegre, RS" {...register("location")} />
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="linkedinUrl">LinkedIn (Opcional)</Label>
+                <Input id="linkedinUrl" type="text" placeholder="linkedin.com/in/seu-perfil" {...register("linkedinUrl")} />
+                </div>
             </div>
           </CardContent>
         </Card>
@@ -309,27 +313,28 @@ export default function CandidateProfilePage() {
         <Card className="mt-8">
           <CardHeader>
             <CardTitle>Experiência Profissional</CardTitle>
-            <CardDescription>Descreva suas experiências anteriores.</CardDescription>
+            <CardDescription>Descreva suas experiências anteriores. Você pode usar a IA para extrair isso do seu currículo.</CardDescription>
           </CardHeader>
           <CardContent>
-              <Textarea placeholder="Descreva sua experiência aqui..." rows={8} {...register("experience")} />
+              <Textarea placeholder="Ex: Vendedor na Loja X (2020-2022) - Responsável pelo atendimento ao cliente e fechamento de vendas..." rows={8} {...register("experience")} />
           </CardContent>
         </Card>
 
         <Card className="mt-8">
           <CardHeader>
             <CardTitle>Habilidades</CardTitle>
-            <CardDescription>Liste suas principais competências (separadas por vírgula).</CardDescription>
+            <CardDescription>Liste suas principais competências técnicas e comportamentais (separadas por vírgula).</CardDescription>
           </CardHeader>
           <CardContent>
-              <Input placeholder="Ex: React, Vendas, Gestão de Pessoas" {...register("skills")} />
+              <Input placeholder="Ex: React, Vendas, Gestão de Pessoas, Liderança" {...register("skills")} />
           </CardContent>
         </Card>
 
         <div className="mt-12 flex justify-end">
-          <Button size="lg" type="submit">Salvar Alterações</Button>
+          <Button size="lg" type="submit">Salvar Currículo</Button>
         </div>
       </form>
     </div>
   );
 }
+ 

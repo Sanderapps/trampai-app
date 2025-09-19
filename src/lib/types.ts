@@ -1,3 +1,4 @@
+
 import { Timestamp } from "firebase/firestore";
 
 export type Company = {
@@ -15,8 +16,8 @@ export type Job = {
   location: string;
   type: 'CLT' | 'PJ' | 'Extra/Freelancer' | 'Estágio';
   salary?: {
-    min: number;
-    max: number;
+    min?: number;
+    max?: number;
   };
   dailyRate?: number;
   description: string;

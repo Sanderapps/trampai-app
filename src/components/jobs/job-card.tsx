@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -44,13 +45,26 @@ export function JobCard({ job }: JobCardProps) {
 
   const formatSalary = (job: Job) => {
     if (job.type === 'Extra/Freelancer') {
-        return job.dailyRate ? `R$ ${job.dailyRate.toLocaleString('pt-BR')} / dia` : 'A combinar';
+      return job.dailyRate
+        ? `R$ ${job.dailyRate.toLocaleString('pt-BR')} / dia`
+        : 'A combinar';
     }
-    if (!job.salary) return 'A combinar';
-    if (job.salary.min === job.salary.max) {
-      return `R$ ${job.salary.min.toLocaleString('pt-BR')}`;
+    if (!job.salary || (!job.salary.min && !job.salary.max)) {
+      return 'A combinar';
     }
-    return `R$ ${job.salary.min.toLocaleString('pt-BR')} - R$ ${job.salary.max.toLocaleString('pt-BR')}`;
+    if (job.salary.min && job.salary.max) {
+      if (job.salary.min === job.salary.max) {
+        return `R$ ${job.salary.min.toLocaleString('pt-BR')}`;
+      }
+      return `R$ ${job.salary.min.toLocaleString('pt-BR')} - R$ ${job.salary.max.toLocaleString('pt-BR')}`;
+    }
+    if (job.salary.min) {
+      return `A partir de R$ ${job.salary.min.toLocaleString('pt-BR')}`;
+    }
+    if (job.salary.max) {
+      return `Até R$ ${job.salary.max.toLocaleString('pt-BR')}`;
+    }
+    return 'A combinar';
   };
 
   const getPostedAt = () => {

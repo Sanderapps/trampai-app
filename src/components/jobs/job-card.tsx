@@ -11,6 +11,7 @@ import {
   Clock,
   BadgeDollarSign,
   Eye,
+  Gift,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -79,6 +80,35 @@ export function JobCard({ job }: JobCardProps) {
     return new Date(); // Fallback
   }
 
+  const getBenefitsSummary = () => {
+    if (!job.benefits) return null;
+
+    const benefitsMap = {
+      hasVT: 'VT',
+      hasVR: 'VR',
+      hasVA: 'VA',
+      hasHealthPlan: 'Plano de Saúde',
+      hasCommission: 'Comissão',
+    };
+
+    const available = Object.entries(job.benefits)
+      .filter(([key, value]) => value === true && key in benefitsMap)
+      .map(([key]) => benefitsMap[key as keyof typeof benefitsMap]);
+    
+    if (available.length === 0 && !job.benefits.others) return null;
+
+    let summary = available.slice(0, 2).join(' + ');
+    if (available.length > 2 || job.benefits.others) {
+      summary += ' e mais...';
+    } else if (available.length === 0 && job.benefits.others) {
+      summary = 'Benefícios adicionais';
+    }
+    
+    return summary;
+  }
+
+  const benefitsSummary = getBenefitsSummary();
+
   if (!company) {
     // Or render a skeleton/fallback
     return null;
@@ -126,6 +156,12 @@ export function JobCard({ job }: JobCardProps) {
           <BadgeDollarSign className="h-4 w-4" />
           <span>{formatSalary(job)}</span>
         </div>
+        {benefitsSummary && (
+          <div className="flex items-center gap-2">
+            <Gift className="h-4 w-4" />
+            <span>{benefitsSummary}</span>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4" />
           <span>

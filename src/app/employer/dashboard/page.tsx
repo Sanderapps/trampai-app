@@ -3,11 +3,11 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
-import { PlusCircle, Briefcase, Users, Eye, Trash2, Pencil } from 'lucide-react';
+import { PlusCircle, Briefcase, Users, Eye, Trash2, Pencil, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { useEffect, useState } from 'react';
 import { Job } from '@/lib/types';
-import { collection, getDocs, query, where, getCountFromServer, deleteDoc, doc, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, query, where, getCountFromServer, deleteDoc, doc, writeBatch, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
@@ -101,6 +101,27 @@ export default function EmployerDashboard() {
     }
   };
 
+  const handleRepublishJob = async (jobId: string) => {
+    try {
+        const jobRef = doc(db, 'jobs', jobId);
+        await updateDoc(jobRef, {
+            postedAt: serverTimestamp()
+        });
+        toast({
+            title: "Vaga republicada!",
+            description: "A data de publicação foi atualizada e a vaga subirá na listagem."
+        });
+        fetchEmployerJobs(); // Re-fetch to re-sort
+    } catch (error) {
+        console.error("Error republishing job:", error);
+        toast({
+            variant: 'destructive',
+            title: "Erro ao republicar",
+            description: "Não foi possível atualizar a data da vaga. Tente novamente."
+        });
+    }
+  }
+
   if (loading) {
     return <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">Carregando...</div>;
   }
@@ -177,6 +198,16 @@ export default function EmployerDashboard() {
                                       <CardDescription>{job.location}</CardDescription>
                                   </div>
                                   <div className='flex'>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                          <Button variant="ghost" size="icon" onClick={() => handleRepublishJob(job.id)}>
+                                            <RefreshCw className="h-4 w-4" />
+                                          </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                          <p>Republicar (atualiza a data)</p>
+                                      </TooltipContent>
+                                    </Tooltip>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Button asChild variant="ghost" size="icon">

@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
 
 function formatSocialUrl(url: string) {
     if (!url) return '';
@@ -31,6 +32,13 @@ function formatSocialUrl(url: string) {
     }
     return `https://${url}`;
 }
+
+function formatPhoneNumberForLink(phone: string, countryCode = '55') {
+  if (!phone) return '';
+  const digitsOnly = phone.replace(/\D/g, '');
+  return `${countryCode}${digitsOnly}`;
+}
+
 
 export default function ApplicantsPage() {
   const params = useParams();
@@ -154,6 +162,8 @@ export default function ApplicantsPage() {
     return notFound();
   }
 
+  const cleanPhoneNumber = formatPhoneNumberForLink(selectedApplication?.candidatePhone || '');
+
   return (
     <div className="container mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="mb-8">
@@ -240,14 +250,14 @@ export default function ApplicantsPage() {
                     </div>
                 ) : selectedCandidate ? (
                     <div className="space-y-6">
-                        <div className="flex flex-col sm:flex-row items-center gap-6">
+                        <div className="flex flex-col sm:flex-row items-start gap-6">
                              <Avatar className="h-24 w-24 border-2 border-primary">
                                 {/* In a real app, you would get the photoURL from the user profile */}
                                 <AvatarFallback className="text-3xl">{selectedCandidate.displayName?.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <div className='space-y-1'>
+                            <div className='flex-1 space-y-2'>
                                 <h2 className="text-2xl font-bold">{selectedCandidate.displayName}</h2>
-                                <div className="flex flex-wrap gap-x-4 gap-y-2 text-muted-foreground">
+                                <div className="flex flex-col gap-2 text-muted-foreground">
                                     <span className='flex items-center gap-2'><Mail className='h-4 w-4'/>{selectedCandidate.email}</span>
                                     {selectedApplication?.candidatePhone && <span className='flex items-center gap-2'><Phone className='h-4 w-4'/>{selectedApplication.candidatePhone}</span>}
                                     {selectedCandidate.location && <span className='flex items-center gap-2'><MapPin className='h-4 w-4'/>{selectedCandidate.location}</span>}
@@ -261,6 +271,22 @@ export default function ApplicantsPage() {
                                     </div>
                                 )}
                             </div>
+                            {selectedApplication?.candidatePhone && (
+                                <div className='flex flex-col sm:flex-row gap-2'>
+                                     <Button asChild size="sm">
+                                        <a href={`https://wa.me/${cleanPhoneNumber}`} target='_blank' rel="noopener noreferrer">
+                                            <WhatsappIcon className='mr-2 h-4 w-4' />
+                                            WhatsApp
+                                        </a>
+                                    </Button>
+                                    <Button asChild variant="outline" size="sm">
+                                        <a href={`tel:${cleanPhoneNumber}`}>
+                                            <Phone className='mr-2 h-4 w-4' />
+                                            Ligar
+                                        </a>
+                                    </Button>
+                                </div>
+                             )}
                         </div>
 
                         <Separator />

@@ -3,56 +3,93 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
-import { PlusCircle, Briefcase, Users, Eye } from 'lucide-react';
+import { PlusCircle, Briefcase, Users, Eye, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { useEffect, useState } from 'react';
 import { Job } from '@/lib/types';
-import { collection, getDocs, query, where,getCountFromServer } from 'firebase/firestore';
+import { collection, getDocs, query, where, getCountFromServer, deleteDoc, doc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 type JobWithApplicantCount = Job & { applicantCount: number };
 
 export default function EmployerDashboard() {
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
   const [jobs, setJobs] = useState<JobWithApplicantCount[]>([]);
   const [jobsLoading, setJobsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchEmployerJobs = async () => {
-      if (!user) return;
-      setJobsLoading(true);
-      try {
-        const jobsCollection = collection(db, 'jobs');
-        const q = query(jobsCollection, where("employerId", "==", user.uid));
-        const jobSnapshot = await getDocs(q);
-        const jobList = jobSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
+  const fetchEmployerJobs = async () => {
+    if (!user) return;
+    setJobsLoading(true);
+    try {
+      const jobsCollection = collection(db, 'jobs');
+      const q = query(jobsCollection, where("employerId", "==", user.uid));
+      const jobSnapshot = await getDocs(q);
+      const jobList = jobSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
 
-        const jobsWithCounts: JobWithApplicantCount[] = await Promise.all(
-            jobList.map(async (job) => {
-                const appsCollection = collection(db, 'applications');
-                const appsQuery = query(appsCollection, where('jobId', '==', job.id));
-                const snapshot = await getCountFromServer(appsQuery);
-                return { ...job, applicantCount: snapshot.data().count };
-            })
-        );
+      const jobsWithCounts: JobWithApplicantCount[] = await Promise.all(
+          jobList.map(async (job) => {
+              const appsCollection = collection(db, 'applications');
+              const appsQuery = query(appsCollection, where('jobId', '==', job.id));
+              const snapshot = await getCountFromServer(appsQuery);
+              return { ...job, applicantCount: snapshot.data().count };
+          })
+      );
 
-        setJobs(jobsWithCounts);
-      } catch (error) {
-        console.error("Error fetching employer jobs:", error);
-      } finally {
-        setJobsLoading(false);
-      }
+      setJobs(jobsWithCounts.sort((a, b) => (b.postedAt as any) - (a.postedAt as any)));
+    } catch (error) {
+      console.error("Error fetching employer jobs:", error);
+    } finally {
+      setJobsLoading(false);
     }
-    
+  }
+
+  useEffect(() => {
     if (!loading && userProfile && userProfile.accountType !== 'employer') {
         router.push('/candidate/dashboard');
     } else if (user) {
         fetchEmployerJobs();
     }
   }, [user, userProfile, loading, router]);
+  
+  const handleDeleteJob = async (jobId: string) => {
+    try {
+      // Delete all applications for the job
+      const appsCollection = collection(db, 'applications');
+      const appsQuery = query(appsCollection, where('jobId', '==', jobId));
+      const appSnapshot = await getDocs(appsQuery);
+
+      const batch = writeBatch(db);
+      appSnapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+
+      // Delete the job itself
+      await deleteDoc(doc(db, 'jobs', jobId));
+
+      // Refresh the job list locally
+      setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
+      
+      toast({
+        title: "Vaga excluída!",
+        description: "A vaga e todas as suas candidaturas foram removidas.",
+      });
+
+    } catch (error) {
+      console.error("Error deleting job:", error);
+      toast({
+        variant: 'destructive',
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir a vaga. Tente novamente.",
+      });
+    }
+  };
 
   if (loading) {
     return <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">Carregando...</div>;
@@ -123,8 +160,32 @@ export default function EmployerDashboard() {
                 {jobs.map(job => (
                     <Card key={job.id} className='flex flex-col'>
                         <CardHeader>
-                            <CardTitle>{job.title}</CardTitle>
-                            <CardDescription>{job.location}</CardDescription>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <CardTitle>{job.title}</CardTitle>
+                                    <CardDescription>{job.location}</CardDescription>
+                                </div>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon">
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Esta ação não pode ser desfeita. Isso excluirá permanentemente a vaga
+                                            e todas as suas candidaturas.
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteJob(job.id)}>Excluir</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
                         </CardHeader>
                         <CardContent className='flex-grow'>
                             <div className='flex items-center gap-2 text-muted-foreground'>

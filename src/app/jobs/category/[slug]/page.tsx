@@ -1,3 +1,4 @@
+
 'use client';
 
 import { JobCard } from '@/components/jobs/job-card';
@@ -9,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs, limit, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useParams } from 'next/navigation';
 
 const categoryNames: { [key: string]: string } = {
     'restaurantes': 'Restaurantes',
@@ -19,12 +21,16 @@ const categoryNames: { [key: string]: string } = {
     'servicos-gerais': 'Serviços Gerais'
 }
 
-export default function CategoryPage({ params }: { params: { slug: string } }) {
-  const categoryName = categoryNames[params.slug] || 'Categoria';
+export default function CategoryPage() {
+  const params = useParams();
+  const slug = params.slug as string;
+  const categoryName = categoryNames[slug] || 'Categoria';
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!slug) return;
+
     const fetchJobs = async () => {
       setLoading(true);
       try {
@@ -53,7 +59,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
     };
 
     fetchJobs();
-  }, [categoryName]);
+  }, [slug, categoryName]);
 
 
   return (

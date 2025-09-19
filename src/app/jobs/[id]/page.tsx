@@ -1,7 +1,7 @@
 
 'use client';
 import { Job } from '@/lib/types';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -34,15 +34,19 @@ import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { companies } from '@/lib/data';
 
-export default function JobDetailsPage({ params }: { params: { id: string } }) {
+export default function JobDetailsPage() {
+  const params = useParams();
+  const jobId = params.id as string;
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!jobId) return;
+    
     const fetchJob = async () => {
       setLoading(true);
       try {
-        const jobDoc = await getDoc(doc(db, 'jobs', params.id));
+        const jobDoc = await getDoc(doc(db, 'jobs', jobId));
         if (jobDoc.exists()) {
           setJob({ id: jobDoc.id, ...jobDoc.data() } as Job);
         } else {
@@ -57,7 +61,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
     };
 
     fetchJob();
-  }, [params.id]);
+  }, [jobId]);
 
   const company = job ? companies.find(c => c.id === job.companyId) : null;
 

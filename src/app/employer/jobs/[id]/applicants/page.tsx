@@ -1,6 +1,7 @@
+
 'use client';
 
-import { notFound, useRouter } from 'next/navigation';
+import { notFound, useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { collection, doc, getDoc, getDocs, query, where, Timestamp } from 'firebase/firestore';
@@ -14,7 +15,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
-export default function ApplicantsPage({ params }: { params: { id: string } }) {
+export default function ApplicantsPage() {
+  const params = useParams();
+  const jobId = params.id as string;
   const { user, userProfile, loading: authLoading } = useAuth();
   const [job, setJob] = useState<Job | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -34,7 +37,7 @@ export default function ApplicantsPage({ params }: { params: { id: string } }) {
       setLoading(true);
       try {
         // Fetch Job Details
-        const jobDocRef = doc(db, 'jobs', params.id);
+        const jobDocRef = doc(db, 'jobs', jobId);
         const jobDoc = await getDoc(jobDocRef);
 
         if (!jobDoc.exists() || jobDoc.data().employerId !== user.uid) {
@@ -45,7 +48,7 @@ export default function ApplicantsPage({ params }: { params: { id: string } }) {
 
         // Fetch Applications
         const appsCollection = collection(db, 'applications');
-        const q = query(appsCollection, where("jobId", "==", params.id));
+        const q = query(appsCollection, where("jobId", "==", jobId));
         const appSnapshot = await getDocs(q);
         const appList = appSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Application));
         setApplications(appList);
@@ -65,7 +68,7 @@ export default function ApplicantsPage({ params }: { params: { id: string } }) {
         router.push('/login');
       }
     }
-  }, [params.id, user, userProfile, authLoading, router]);
+  }, [jobId, user, userProfile, authLoading, router]);
 
   const getAppliedDate = (timestamp: Timestamp) => {
       if (!timestamp) return 'Data indisponível';

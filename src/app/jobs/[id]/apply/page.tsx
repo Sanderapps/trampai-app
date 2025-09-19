@@ -1,6 +1,7 @@
+
 'use client';
 
-import { notFound, useRouter } from 'next/navigation';
+import { notFound, useRouter, useParams } from 'next/navigation';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -45,7 +46,9 @@ const fileToBase64 = (file: File): Promise<string> => {
 };
 
 
-export default function ApplyPage({ params }: { params: { id: string } }) {
+export default function ApplyPage() {
+  const params = useParams();
+  const jobId = params.id as string;
   const router = useRouter();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
@@ -64,10 +67,12 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
   }, [user, setValue]);
 
    useEffect(() => {
+    if (!jobId) return;
+
     const fetchJob = async () => {
       setLoading(true);
       try {
-        const jobDoc = await getDoc(doc(db, 'jobs', params.id));
+        const jobDoc = await getDoc(doc(db, 'jobs', jobId));
         if (jobDoc.exists()) {
           setJob({ id: jobDoc.id, ...jobDoc.data() } as Job);
         } else {
@@ -82,7 +87,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
     };
 
     fetchJob();
-  }, [params.id]);
+  }, [jobId]);
 
 
   const onSubmit: SubmitHandler<ApplyFormValues> = async (data) => {

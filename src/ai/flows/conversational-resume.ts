@@ -9,23 +9,12 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { ConversationMessage, ConversationMessageSchema, ProfileData, ProfileDataSchema } from '@/lib/types';
-import { z } from 'genkit';
-
-
-// Defines the input for the main flow, which is the conversation history
-export const ConversationalResumeInputSchema = z.object({
-  history: z.array(ConversationMessageSchema),
-});
-export type ConversationalResumeInput = z.infer<typeof ConversationalResumeInputSchema>;
-
-// Defines the output of the main flow
-export const ConversationalResumeOutputSchema = z.object({
-    nextQuestion: z.string().describe("The next question for the AI to ask the user, or a final summary message."),
-    isFinished: z.boolean().describe("A flag indicating if the conversation is complete and the profile is built."),
-    profile: ProfileDataSchema.describe("The structured profile data collected so far."),
-});
-export type ConversationalResumeOutput = z.infer<typeof ConversationalResumeOutputSchema>;
+import { 
+    ConversationalResumeInput,
+    ConversationalResumeOutput,
+    ConversationalResumeInputSchema,
+    ConversationalResumeOutputSchema
+} from '@/lib/types';
 
 
 export async function conversationalResume(input: ConversationalResumeInput): Promise<ConversationalResumeOutput> {
@@ -106,5 +95,3 @@ const conversationalResumeFlow = ai.defineFlow(
     }
   }
 );
-
-    

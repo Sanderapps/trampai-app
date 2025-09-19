@@ -92,13 +92,11 @@ export default function CandidateProfilePage() {
   const safeJsonParse = (jsonString: string | undefined, fallback: any = []) => {
     if (!jsonString) return fallback;
     try {
+        // First, check if it's already an object (which it shouldn't be but good practice)
+        if (typeof jsonString === 'object') return jsonString;
         return JSON.parse(jsonString);
     } catch (e) {
         console.warn("Failed to parse JSON, falling back.", e);
-        // If it fails to parse, it might be a plain string from a previous data structure.
-        // Return the fallback, or you could try to handle the plain string.
-        // For this case, we'll return the fallback and log the original value.
-        console.log("Original value:", jsonString);
         return fallback;
     }
   };
@@ -424,5 +422,3 @@ export default function CandidateProfilePage() {
     </div>
   );
 }
-
-    

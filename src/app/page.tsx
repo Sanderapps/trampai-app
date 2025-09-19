@@ -59,10 +59,21 @@ export default function Home() {
 
   return (
     <div className="flex flex-col">
-      <section className="relative -mt-[var(--header-height)] flex min-h-[500px] flex-col justify-center bg-gradient-to-r from-primary to-secondary">
-        <div className="relative mx-auto w-full max-w-7xl px-4 pt-[var(--header-height)] text-center text-primary-foreground sm:px-6 lg:px-8">
+      <section className="relative -mt-[var(--header-height)] flex h-[500px] flex-col justify-center">
+        <div className="absolute inset-0">
+            <Image 
+                src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=2070&auto=format&fit=crop"
+                alt="Pessoas trabalhando em um escritório moderno"
+                fill
+                className='object-cover'
+                data-ai-hint="people working"
+                priority
+            />
+            <div className='absolute inset-0 bg-black/60'></div>
+        </div>
+        <div className="relative mx-auto w-full max-w-7xl px-4 text-center text-primary-foreground sm:px-6 lg:px-8">
           <h1 className="font-headline text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-            Encontre seu próximo <span className="text-accent">trampo</span> no RS
+            Encontre seu próximo <span className="text-primary">trampo</span> no RS
           </h1>
           <p className="mt-6 max-w-3xl mx-auto text-lg leading-8">
             A plataforma de empregos que conecta talentos e empresas no Rio Grande do Sul.
@@ -170,8 +181,8 @@ export default function Home() {
                   Publique suas vagas e encontre os melhores talentos do Rio Grande do Sul.
                   Nossa plataforma simplifica seu processo de contratação.
                 </p>
-                <Button asChild variant="accent" size="lg" className="mt-8">
-                  <Link href="/employer/dashboard">
+                <Button asChild variant="secondary" size="lg" className="mt-8">
+                  <Link href="/employer/jobs/new">
                     Anunciar Vaga <ArrowRight className="ml-2" />
                   </Link>
                 </Button>
@@ -180,7 +191,7 @@ export default function Home() {
             <div className="aspect-h-3 aspect-w-5 -mt-6 md:aspect-h-1 md:aspect-w-2">
               <Image
                 className="translate-x-6 translate-y-6 transform rounded-md object-cover object-left-top sm:translate-x-16 lg:translate-y-20"
-                src="https://images.unsplash.com/photo-1551818255-ac24e752hs12?q=80&w=800&auto=format&fit=crop"
+                src="https://images.unsplash.com/photo-1551818255-ac24e7529f79?q=80&w=800&auto=format&fit=crop"
                 alt="Empregador analisando currículos"
                 width={800}
                 height={533}

@@ -50,7 +50,7 @@ Siga RIGOROSAMENTE esta ordem de perguntas, preenchendo o objeto 'profile' a cad
     e. Após coletar uma experiência completa, pergunte: "Você tem mais alguma experiência para adicionar? Se não, pode dizer 'não'".
     f. Se a resposta for afirmativa, repita os passos de 'a' a 'd' para a nova experiência. Se for "não" ou algo semelhante, siga para a próxima etapa.
 
-5.  **FORMAÇÃO EDUCACIONAL (peça uma de cada vez):**
+5.  **FORMAÇÃO EDUCACIONAL E CURSOS (peça uma de cada vez):**
     a. Pergunte o nome do CURSO ou formação (ex: Ensino Médio, Gastronomia).
     b. Pergunte o nome da INSTITUIÇÃO de ensino.
     c. Pergunte o ANO DE CONCLUSÃO.
@@ -95,3 +95,6 @@ const conversationalResumeFlow = ai.defineFlow(
     }
   }
 );
+
+
+    

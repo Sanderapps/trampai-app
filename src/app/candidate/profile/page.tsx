@@ -366,7 +366,7 @@ export default function CandidateProfilePage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Formação Acadêmica</CardTitle>
+                <CardTitle>Formação Acadêmica e Cursos</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {eduFields.map((field, index) => (
@@ -475,3 +475,5 @@ export default function CandidateProfilePage() {
 }
 
       
+
+    

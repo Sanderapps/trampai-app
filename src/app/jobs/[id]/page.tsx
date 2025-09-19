@@ -138,7 +138,10 @@ export default function JobDetailsPage() {
         }
     }).filter(Boolean) as string[] : [];
 
-    const otherBenefits = job.benefits?.others?.filter(b => b.trim() !== '') || [];
+    const otherBenefitsRaw = job.benefits?.others || [];
+    const otherBenefits = (Array.isArray(otherBenefitsRaw) ? otherBenefitsRaw : Object.values(otherBenefitsRaw))
+                           .filter(b => typeof b === 'string' && b.trim() !== '');
+
     const allBenefits = [...benefitList, ...otherBenefits];
 
     const hasBenefits = allBenefits.length > 0;

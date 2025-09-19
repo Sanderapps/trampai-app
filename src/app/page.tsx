@@ -25,6 +25,7 @@ import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import placeholderData from '@/lib/placeholder-images.json';
+import { useRouter } from 'next/navigation';
 
 const categories = [
   { name: 'Restaurantes', icon: UtensilsCrossed, slug: 'restaurantes' },
@@ -38,6 +39,10 @@ const categories = [
 export default function Home() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [location, setLocation] = useState('');
+  const router = useRouter();
+
 
   const heroImage = placeholderData.placeholderImages.find(img => img.id === 'hero-bg');
   const employerImage = placeholderData.placeholderImages.find(img => img.id === 'employer-cta');
@@ -61,6 +66,15 @@ export default function Home() {
     fetchJobs();
   }, []);
 
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const searchParams = new URLSearchParams();
+    if(query) searchParams.append('q', query);
+    if(location) searchParams.append('location', location);
+    
+    router.push(`/jobs/search?${searchParams.toString()}`);
+  }
+
   return (
     <div className="flex flex-col">
       <section className="relative -mt-[var(--header-height)] flex h-[500px] flex-col justify-center bg-primary">
@@ -72,13 +86,18 @@ export default function Home() {
           <p className="mt-6 max-w-3xl mx-auto text-lg leading-8">
             A plataforma de empregos que conecta talentos e empresas no Rio Grande do Sul.
           </p>
-          <form className="mt-10 flex w-full max-w-3xl mx-auto flex-col items-center gap-4 rounded-lg bg-background/10 p-4 backdrop-blur-sm sm:flex-row">
+          <form 
+            onSubmit={handleSearch}
+            className="mt-10 flex w-full max-w-3xl mx-auto flex-col items-center gap-4 rounded-lg bg-background/10 p-4 backdrop-blur-sm sm:flex-row"
+          >
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Cargo, palavra-chave ou empresa"
                 className="w-full pl-10 text-foreground"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
               />
             </div>
             <div className="relative w-full">
@@ -87,6 +106,8 @@ export default function Home() {
                 type="text"
                 placeholder="Cidade ou região"
                 className="w-full pl-10 text-foreground"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
               />
             </div>
             <Button type="submit" className="w-full sm:w-auto" size="lg">

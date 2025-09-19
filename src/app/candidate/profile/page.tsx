@@ -11,16 +11,12 @@ import { useForm, SubmitHandler, useFieldArray, Controller } from "react-hook-fo
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from "@/hooks/use-toast";
-import { CalendarIcon, PlusCircle, Save, Trash2 } from "lucide-react";
+import { PlusCircle, Save, Trash2 } from "lucide-react";
 import { updateProfile } from "firebase/auth";
 import { db } from "@/lib/firebase/client";
 import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -41,7 +37,9 @@ const educationSchema = z.object({
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório.'),
-  birthDate: z.date().optional(),
+  birthDay: z.string().optional(),
+  birthMonth: z.string().optional(),
+  birthYear: z.string().optional(),
   phone: z.string().optional(),
   location: z.string().optional(),
   isFirstJob: z.boolean().default(false),
@@ -101,9 +99,12 @@ export default function CandidateProfilePage() {
   // Populate form with user data on load
   useEffect(() => {
     if (userProfile) {
+       const birthDate = userProfile.birthDate ? new Date(userProfile.birthDate) : null;
       profileForm.reset({
         name: userProfile.displayName || '',
-        birthDate: userProfile.birthDate ? new Date(userProfile.birthDate) : undefined,
+        birthDay: birthDate ? String(birthDate.getUTCDate()) : '',
+        birthMonth: birthDate ? String(birthDate.getUTCMonth() + 1) : '',
+        birthYear: birthDate ? String(birthDate.getUTCFullYear()) : '',
         phone: userProfile.phone || '',
         location: userProfile.location || '',
         isFirstJob: userProfile.isFirstJob || false,
@@ -128,6 +129,17 @@ export default function CandidateProfilePage() {
         return;
     }
     
+    let birthDateISO = null;
+    if (profileData.birthYear && profileData.birthMonth && profileData.birthDay) {
+        const year = parseInt(profileData.birthYear, 10);
+        const month = parseInt(profileData.birthMonth, 10);
+        const day = parseInt(profileData.birthDay, 10);
+        if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+            birthDateISO = new Date(Date.UTC(year, month - 1, day)).toISOString();
+        }
+    }
+
+
     try {
         await updateProfile(user, { displayName: profileData.name });
         const userDocRef = doc(db, 'users', user.uid);
@@ -135,7 +147,7 @@ export default function CandidateProfilePage() {
         await setDoc(userDocRef, {
             ...userProfile,
             displayName: profileData.name,
-            birthDate: profileData.birthDate?.toISOString(),
+            birthDate: birthDateISO,
             phone: profileData.phone,
             location: profileData.location,
             isFirstJob: profileData.isFirstJob,
@@ -184,56 +196,29 @@ export default function CandidateProfilePage() {
                 <CardHeader>
                     <CardTitle>Informações Pessoais e de Contato</CardTitle>
                 </CardHeader>
-                 <Controller
-                    control={profileForm.control}
-                    name="birthDate"
-                    render={({ field }) => (
-                        <Popover>
-                            <CardContent className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="name">Nome Completo</Label>
-                                    <Input id="name" {...profileForm.register("name")} />
-                                    {profileForm.formState.errors.name && <p className="text-sm text-destructive">{profileForm.formState.errors.name.message}</p>}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="birthDate">Data de Nascimento</Label>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !field.value && "text-muted-foreground"
-                                            )}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Selecione a data</span>}
-                                        </Button>
-                                    </PopoverTrigger>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="phone">Telefone</Label>
-                                    <Input id="phone" {...profileForm.register("phone")} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="location">Cidade e Estado</Label>
-                                    <Input id="location" placeholder="Ex: Porto Alegre, RS" {...profileForm.register("location")} />
-                                </div>
-                            </CardContent>
-                             <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                    mode="single"
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    initialFocus
-                                    locale={ptBR}
-                                    captionLayout="dropdown-buttons"
-                                    fromYear={1950}
-                                    toYear={new Date().getFullYear()}
-                                />
-                            </PopoverContent>
-                        </Popover>
-                    )}
-                />
+                <CardContent className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Nome Completo</Label>
+                        <Input id="name" {...profileForm.register("name")} />
+                        {profileForm.formState.errors.name && <p className="text-sm text-destructive">{profileForm.formState.errors.name.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Data de Nascimento</Label>
+                        <div className="grid grid-cols-3 gap-2">
+                            <Input placeholder="DD" {...profileForm.register("birthDay")} />
+                            <Input placeholder="MM" {...profileForm.register("birthMonth")} />
+                            <Input placeholder="AAAA" {...profileForm.register("birthYear")} />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="phone">Telefone</Label>
+                        <Input id="phone" {...profileForm.register("phone")} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="location">Cidade e Estado</Label>
+                        <Input id="location" placeholder="Ex: Porto Alegre, RS" {...profileForm.register("location")} />
+                    </div>
+                </CardContent>
             </Card>
 
             <Card>
@@ -347,3 +332,5 @@ export default function CandidateProfilePage() {
     </div>
   );
 }
+
+    

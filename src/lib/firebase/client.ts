@@ -13,16 +13,6 @@ const firebaseConfig: FirebaseOptions = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Check that all config keys are present
-const areAllConfigKeysPresent = Object.values(firebaseConfig).every(value => !!value);
-
-if (!areAllConfigKeysPresent) {
-  // In a client component, we can't throw an error during module initialization.
-  // Instead, we can log an error and the app will fail gracefully when trying to use Firebase services.
-  console.error("Firebase config environment variables are not fully set. Please check your .env file.");
-}
-
-
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);

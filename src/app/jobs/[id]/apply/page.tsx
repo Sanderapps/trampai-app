@@ -6,8 +6,8 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { ArrowLeft, Upload } from 'lucide-react';
-import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { ArrowLeft, Upload, CheckCircle } from 'lucide-react';
+import { addDoc, collection, doc, getDoc, serverTimestamp, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Job } from '@/lib/types';
+import { Job, Application } from '@/lib/types';
 import { db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/auth-context';
@@ -55,6 +55,8 @@ export default function ApplyPage() {
   const { user, userProfile, loading: authLoading } = useAuth();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
+  const [checkingStatus, setCheckingStatus] = useState(true);
+  const [existingApplication, setExistingApplication] = useState<Application | null>(null);
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, setValue } = useForm<ApplyFormValues>({
     resolver: zodResolver(applySchema),
@@ -72,7 +74,7 @@ export default function ApplyPage() {
    useEffect(() => {
     if (!jobId) return;
 
-    const fetchJob = async () => {
+    const fetchJobAndCheckApplication = async () => {
       setLoading(true);
       try {
         const jobDoc = await getDoc(doc(db, 'jobs', jobId));
@@ -80,7 +82,21 @@ export default function ApplyPage() {
           setJob({ id: jobDoc.id, ...jobDoc.data() } as Job);
         } else {
           notFound();
+          return;
         }
+
+        if (user) {
+            setCheckingStatus(true);
+            const appsCollection = collection(db, 'applications');
+            const q = query(appsCollection, where("jobId", "==", jobId), where("candidateId", "==", user.uid));
+            const appSnapshot = await getDocs(q);
+            if (!appSnapshot.empty) {
+                const appDoc = appSnapshot.docs[0];
+                setExistingApplication({ id: appDoc.id, ...appDoc.data() } as Application);
+            }
+            setCheckingStatus(false);
+        }
+
       } catch (error) {
         console.error("Error fetching job:", error);
         notFound();
@@ -89,8 +105,10 @@ export default function ApplyPage() {
       }
     };
 
-    fetchJob();
-  }, [jobId]);
+    if(!authLoading) {
+        fetchJobAndCheckApplication();
+    }
+  }, [jobId, user, authLoading]);
 
 
   const onSubmit: SubmitHandler<ApplyFormValues> = async (data) => {
@@ -145,7 +163,12 @@ export default function ApplyPage() {
     }
   };
 
-  if (loading || authLoading) {
+  const getAppliedDate = (timestamp: Timestamp) => {
+      if (!timestamp) return 'Data indisponível';
+      return new Timestamp(timestamp.seconds, timestamp.nanoseconds).toDate().toLocaleDateString('pt-BR');
+  }
+
+  if (loading || authLoading || checkingStatus) {
     return (
       <div className="container mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
         <Skeleton className="h-10 w-48 mb-8" />
@@ -168,6 +191,36 @@ export default function ApplyPage() {
             </Button>
         </div>
      )
+  }
+
+  if (existingApplication) {
+      return (
+        <div className="container mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+             <div className="mb-8">
+                <Button variant="ghost" asChild>
+                    <Link href={`/jobs/${job.id}`}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Voltar para a vaga
+                    </Link>
+                </Button>
+            </div>
+            <Card>
+                <CardHeader className='text-center'>
+                    <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
+                    <CardTitle className="mt-4 text-2xl">Você já se candidatou!</CardTitle>
+                    <CardDescription>
+                        Sua candidatura para a vaga de <span className='font-semibold'>{job.title}</span> foi enviada em {getAppliedDate(existingApplication.appliedAt)}.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center gap-4">
+                     <p className='text-sm text-muted-foreground'>Você pode acompanhar o status no seu painel.</p>
+                     <Button asChild>
+                        <Link href="/candidate/dashboard">Ir para o painel</Link>
+                     </Button>
+                </CardContent>
+            </Card>
+        </div>
+      )
   }
 
 
@@ -236,3 +289,5 @@ export default function ApplyPage() {
     </div>
   );
 }
+
+    

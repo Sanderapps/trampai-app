@@ -195,7 +195,7 @@ export default function Home() {
             <div className="aspect-h-3 aspect-w-5 -mt-6 md:aspect-h-1 md:aspect-w-2">
               <Image
                 className="translate-x-6 translate-y-6 transform rounded-md object-cover object-left-top sm:translate-x-16 lg:translate-y-20"
-                src="https://images.unsplash.com/photo-1551818255-AC24e752hs12?q=80&w=800&auto=format&fit=crop"
+                src="https://images.unsplash.com/photo-1551818255-ac24e752hs12?q=80&w=800&auto=format&fit=crop"
                 alt="Empregador analisando currículos"
                 width={800}
                 height={533}

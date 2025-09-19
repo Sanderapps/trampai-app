@@ -5,21 +5,22 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/ca
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Application, UserProfile } from "@/lib/types";
 import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { getPostedAt } from "@/lib/job-utils";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Rocket } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CandidateDashboard() {
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
   const [appliedJobs, setAppliedJobs] = useState<Application[]>([]);
   const [appsLoading, setAppsLoading] = useState(true);
+  const notificationShown = useRef(false);
 
   const isProfileIncomplete = useMemo(() => {
     if (!userProfile) return false;
@@ -64,6 +65,20 @@ export default function CandidateDashboard() {
     }
   }, [user, userProfile, loading, router]);
 
+   useEffect(() => {
+    if (!loading && isProfileIncomplete && !notificationShown.current) {
+      notificationShown.current = true; // Mark as shown
+      toast({
+        title: "Seu perfil está quase lá!",
+        description: "Um perfil completo atrai mais recrutadores. Clique aqui para atualizar.",
+        duration: 8000,
+        onClick: () => router.push('/candidate/profile'),
+        className: 'cursor-pointer hover:bg-accent'
+      });
+    }
+   }, [loading, isProfileIncomplete, toast, router]);
+
+
   if (loading) {
     return <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">Carregando...</div>;
   }
@@ -95,21 +110,6 @@ export default function CandidateDashboard() {
     <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       <h1 className="font-headline text-3xl font-bold">Minhas Candidaturas</h1>
       <p className="mt-1 text-muted-foreground">Acompanhe o status das suas candidaturas, {user.displayName}.</p>
-
-       {isProfileIncomplete && (
-        <Alert className="mt-8">
-          <Rocket className="h-4 w-4" />
-          <AlertTitle className="font-bold">Seu perfil está quase lá!</AlertTitle>
-          <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-           <div>
-              Um perfil completo atrai mais recrutadores. Mantenha seu currículo atualizado e aumente suas chances!
-            </div>
-            <Button asChild className="shrink-0">
-                <Link href="/candidate/profile">Completar Perfil Agora</Link>
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
 
       <div className="mt-8 space-y-6">
         {appsLoading ? (

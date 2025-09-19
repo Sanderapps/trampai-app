@@ -25,8 +25,6 @@ export default function EmployerPage() {
                 src={heroImage.imageUrl}
                 alt={heroImage.description}
                 className="absolute inset-0 -z-10 h-full w-full object-cover"
-                width={2070}
-                height={1380}
                 data-ai-hint={heroImage.imageHint}
                 priority
                 fill

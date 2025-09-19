@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { Application } from "@/lib/types";
 import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
+import { Button } from "@/components/ui/button";
 
 export default function CandidateDashboard() {
   const { user, loading } = useAuth();

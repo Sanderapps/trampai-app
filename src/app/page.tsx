@@ -1,3 +1,4 @@
+
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -61,7 +62,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col">
-      <section className="relative -mt-[var(--header-height)]">
+      <section className="relative -mt-[var(--header-height)] flex min-h-[500px] flex-col justify-center">
         <div className="absolute inset-0">
           {heroImage && (
             <Image
@@ -75,14 +76,14 @@ export default function Home() {
           )}
           <div className="absolute inset-0 bg-black/50" />
         </div>
-        <div className="relative mx-auto flex min-h-[500px] max-w-7xl flex-col items-center justify-center px-4 pt-[var(--header-height)] text-center text-primary-foreground sm:px-6 lg:px-8">
+        <div className="relative mx-auto w-full max-w-7xl px-4 pt-[var(--header-height)] text-center text-primary-foreground sm:px-6 lg:px-8">
           <h1 className="font-headline text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
             Encontre seu próximo <span className="text-accent">trampo</span> no RS
           </h1>
-          <p className="mt-6 max-w-3xl text-lg leading-8">
+          <p className="mt-6 max-w-3xl mx-auto text-lg leading-8">
             A plataforma de empregos que conecta talentos e empresas no Rio Grande do Sul.
           </p>
-          <form className="mt-10 flex w-full max-w-3xl flex-col items-center gap-4 rounded-lg bg-background/10 p-4 backdrop-blur-sm sm:flex-row">
+          <form className="mt-10 flex w-full max-w-3xl mx-auto flex-col items-center gap-4 rounded-lg bg-background/10 p-4 backdrop-blur-sm sm:flex-row">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input

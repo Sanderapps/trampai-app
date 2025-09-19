@@ -241,15 +241,17 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
                         </CardContent>
                     </Card>
 
-                     <Card>
-                        <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-                            <Image src={company.logo} alt={company.name} width={56} height={56} className="rounded-md border" />
-                            <div>
-                                <CardTitle className="text-base font-bold">{company.name}</CardTitle>
-                                <CardDescription className="text-sm">Veja o perfil da empresa</CardDescription>
-                            </div>
-                        </CardHeader>
-                    </Card>
+                     <Link href={`/company/${company.id}`} className='block transition-transform hover:scale-[1.02]'>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+                                <Image src={company.logo} alt={company.name} width={56} height={56} className="rounded-md border" />
+                                <div>
+                                    <CardTitle className="text-base font-bold">{company.name}</CardTitle>
+                                    <CardDescription className="text-sm">Veja o perfil da empresa</CardDescription>
+                                </div>
+                            </CardHeader>
+                        </Card>
+                    </Link>
                 </div>
             </div>
         </div>

@@ -13,6 +13,7 @@ import { companies } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { JobCard } from '@/components/jobs/job-card';
+import { Avatar } from '@/components/ui/avatar';
 
 export default function CompanyProfilePage() {
   const params = useParams();
@@ -67,6 +68,8 @@ export default function CompanyProfilePage() {
     );
   }
 
+  const LogoIcon = company.logo;
+
   return (
     <div className="bg-muted/50">
       <div className="container mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
@@ -80,14 +83,9 @@ export default function CompanyProfilePage() {
         </div>
 
         <div className="flex flex-col items-center gap-6 sm:flex-row">
-            <Image 
-                src={company.logo} 
-                alt={company.name} 
-                width={100}
-                height={100}
-                className="rounded-lg border bg-background"
-                data-ai-hint={company.logoHint}
-            />
+            <Avatar className="h-24 w-24 border flex items-center justify-center bg-background">
+                <LogoIcon className="h-12 w-12 text-muted-foreground" />
+            </Avatar>
             <div>
                  <h1 className="font-headline text-3xl font-bold">{company.name}</h1>
                  <p className="mt-1 text-muted-foreground">Veja as oportunidades disponíveis nesta empresa.</p>

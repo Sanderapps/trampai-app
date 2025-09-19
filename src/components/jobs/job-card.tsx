@@ -105,13 +105,13 @@ export function JobCard({ job }: JobCardProps) {
     // Or render a skeleton/fallback
     return null;
   }
+  const LogoIcon = company.logo;
 
   return (
     <Card className="flex h-full flex-col overflow-hidden transition-shadow hover:shadow-lg">
       <CardHeader className="flex flex-row items-start gap-4">
-        <Avatar className="h-14 w-14 border">
-          <AvatarImage src={company.logo} alt={company.name} data-ai-hint={company.logoHint} />
-          <AvatarFallback>{company.name.charAt(0)}</AvatarFallback>
+        <Avatar className="h-14 w-14 border flex items-center justify-center bg-muted">
+            <LogoIcon className="h-8 w-8 text-muted-foreground" />
         </Avatar>
         <div className="flex-grow">
           <CardTitle className="text-lg font-bold">
@@ -120,7 +120,7 @@ export function JobCard({ job }: JobCardProps) {
             </Link>
           </CardTitle>
           <CardDescription className="text-sm">
-            {job.companyName}
+            Empresa Confidencial
           </CardDescription>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge variant="secondary">{job.type}</Badge>

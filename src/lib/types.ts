@@ -1,10 +1,10 @@
 import type { Timestamp } from "firebase/firestore";
+import type { LucideIcon } from "lucide-react";
 
 export type Company = {
   id: string;
   name: string;
-  logo: string;
-  logoHint: string;
+  logo: LucideIcon;
 };
 
 export type Job = {

@@ -9,7 +9,7 @@ const icons = [
     Briefcase,
     Soup,
     ShoppingBasket,
-]
+];
 
 // Attach logos to company data
 export const companies: Company[] = companiesData.map((company, index) => ({

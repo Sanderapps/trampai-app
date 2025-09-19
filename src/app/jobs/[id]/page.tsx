@@ -36,6 +36,7 @@ import { JobInfoItem } from '@/components/jobs/job-info-item';
 import { BenefitList } from '@/components/jobs/benefit-list';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
+import { Avatar } from '@/components/ui/avatar';
 
 export default function JobDetailsPage() {
   const params = useParams();
@@ -147,6 +148,7 @@ export default function JobDetailsPage() {
   }
 
   const postedAtDate = getPostedAt(job.postedAt);
+  const LogoIcon = company.logo;
 
   return (
     <div className="bg-muted/30">
@@ -168,7 +170,7 @@ export default function JobDetailsPage() {
                                 <div>
                                     <CardTitle className="text-2xl font-bold">{job.title}</CardTitle>
                                     <CardDescription className="mt-2 flex items-center gap-2 text-sm">
-                                        <Building className="h-4 w-4" /> {job.companyName}
+                                        <Building className="h-4 w-4" /> Empresa Confidencial
                                     </CardDescription>
                                 </div>
                                 <div className="flex gap-2">
@@ -211,17 +213,16 @@ export default function JobDetailsPage() {
                         </CardContent>
                     </Card>
 
-                     <Link href={`/company/${company.id}`} className='block transition-transform hover:scale-[1.02]'>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-                                <Image src={company.logo} alt={company.name} width={56} height={56} className="rounded-md border" />
-                                <div>
-                                    <CardTitle className="text-base font-bold">{company.name}</CardTitle>
-                                    <CardDescription className="text-sm">Veja o perfil da empresa</CardDescription>
-                                </div>
-                            </CardHeader>
-                        </Card>
-                    </Link>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+                            <Avatar className="h-14 w-14 border flex items-center justify-center bg-muted">
+                                <LogoIcon className="h-8 w-8 text-muted-foreground" />
+                            </Avatar>
+                            <div>
+                                <CardTitle className="text-base font-bold">Empresa Confidencial</CardTitle>
+                            </div>
+                        </CardHeader>
+                    </Card>
                 </div>
             </div>
         </div>

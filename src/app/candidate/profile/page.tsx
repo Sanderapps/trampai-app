@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Schema for the manual form
 const experienceSchema = z.object({
@@ -169,6 +170,15 @@ export default function CandidateProfilePage() {
     await saveProfile(data);
   };
 
+  const years = Array.from({ length: 71 }, (_, i) => new Date().getFullYear() - 15 - i);
+  const months = [
+    { value: '1', label: 'Janeiro' }, { value: '2', label: 'Fevereiro' }, { value: '3', label: 'Março' },
+    { value: '4', label: 'Abril' }, { value: '5', label: 'Maio' }, { value: '6', label: 'Junho' },
+    { value: '7', label: 'Julho' }, { value: '8', label: 'Agosto' }, { value: '9', label: 'Setembro' },
+    { value: '10', label: 'Outubro' }, { value: '11', label: 'Novembro' }, { value: '12', label: 'Dezembro' }
+  ];
+  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+
 
   // --- Render Logic ---
   if (loading) {
@@ -205,9 +215,42 @@ export default function CandidateProfilePage() {
                     <div className="space-y-2">
                         <Label>Data de Nascimento</Label>
                         <div className="grid grid-cols-3 gap-2">
-                            <Input placeholder="DD" {...profileForm.register("birthDay")} />
-                            <Input placeholder="MM" {...profileForm.register("birthMonth")} />
-                            <Input placeholder="AAAA" {...profileForm.register("birthYear")} />
+                            <Controller
+                                control={profileForm.control}
+                                name="birthDay"
+                                render={({ field }) => (
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <SelectTrigger><SelectValue placeholder="Dia" /></SelectTrigger>
+                                        <SelectContent>
+                                            {days.map(day => <SelectItem key={day} value={String(day)}>{day}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                             <Controller
+                                control={profileForm.control}
+                                name="birthMonth"
+                                render={({ field }) => (
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <SelectTrigger><SelectValue placeholder="Mês" /></SelectTrigger>
+                                        <SelectContent>
+                                            {months.map(month => <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                            <Controller
+                                control={profileForm.control}
+                                name="birthYear"
+                                render={({ field }) => (
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
+                                        <SelectContent>
+                                            {years.map(year => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
                         </div>
                     </div>
                     <div className="space-y-2">

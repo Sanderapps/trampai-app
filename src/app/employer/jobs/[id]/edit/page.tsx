@@ -98,7 +98,7 @@ export default function EditJobPage() {
                     setValue('benefits.hasVA', data.benefits.hasVA);
                     setValue('benefits.hasHealthPlan', data.benefits.hasHealthPlan);
                     // Ensure 'others' is an array of 5, padding with empty strings if necessary
-                    const others = data.benefits.others || [];
+                    const others = (Array.isArray(data.benefits.others) ? data.benefits.others : Object.values(data.benefits.others || {})).filter(b => typeof b === 'string' && b);
                     const paddedOthers = Array.from({ length: 5 }, (_, i) => others[i] || '');
                     setValue('benefits.others', paddedOthers);
                 }

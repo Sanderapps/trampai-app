@@ -57,7 +57,7 @@ export default function NewJobPage() {
         hasVR: false,
         hasVA: false,
         hasHealthPlan: false,
-        others: [],
+        others: Array(5).fill(''),
       },
     },
   });

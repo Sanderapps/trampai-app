@@ -42,7 +42,7 @@ export default function EmployerPage() {
                 <Button asChild size="lg" variant="secondary">
                     <Link href="/employer/jobs/new">Anunciar Vaga Gratuitamente</Link>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="border-white text-white hover:bg-transparent hover:text-white">
+                <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
                     <Link href="/pricing">Ver Planos</Link>
                 </Button>
                 </div>

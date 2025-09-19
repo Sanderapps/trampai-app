@@ -173,14 +173,14 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
               <Input id="phone" type="tel" {...register('phone')} />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="resume">Currículo (PDF)</Label>
+                <Label htmlFor="resume">Currículo (PDF, DOC, DOCX)</Label>
                 <div className="flex items-center justify-center w-full">
                     <Label htmlFor="resume" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                             <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
                             <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Clique para enviar</span> ou arraste e solte</p>
                         </div>
-                        <Input id="resume" type="file" className="hidden" {...register('resume')} accept=".pdf" />
+                        <Input id="resume" type="file" className="hidden" {...register('resume')} accept=".pdf,.doc,.docx,.rtf,.txt" />
                     </Label>
                 </div> 
                 {errors.resume && <p className="text-sm text-destructive">{typeof errors.resume.message === 'string' ? errors.resume.message : 'Erro no arquivo'}</p>}

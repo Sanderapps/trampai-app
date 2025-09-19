@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button'
 import {
@@ -16,6 +17,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useToast } from '@/hooks/use-toast';
 
 const signupSchema = z.object({
     name: z.string().min(2, 'Nome é obrigatório'),
@@ -30,13 +32,27 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 
 
 export default function SignupPage() {
-    const { register, handleSubmit, formState: { errors } } = useForm<SignupFormValues>({
+    const router = useRouter();
+    const { toast } = useToast();
+    const { register, handleSubmit, formState: { errors, isSubmitting }, watch } = useForm<SignupFormValues>({
         resolver: zodResolver(signupSchema)
     });
+    const accountType = watch('accountType');
 
-    const onSubmit = (data: SignupFormValues) => {
+    const onSubmit = async (data: SignupFormValues) => {
+        await new Promise(resolve => setTimeout(resolve, 1000));
         console.log(data);
-        // Handle signup logic
+        
+        toast({
+            title: "Cadastro realizado com sucesso!",
+            description: "Sua conta foi criada.",
+        });
+
+        if (data.accountType === 'candidate') {
+            router.push('/candidate/dashboard');
+        } else {
+            router.push('/employer/dashboard');
+        }
     };
 
   return (
@@ -73,7 +89,7 @@ export default function SignupPage() {
 
             <div className="grid gap-2">
                 <Label>Tipo de conta</Label>
-                <RadioGroup defaultValue="candidate" className="flex" {...register('accountType')}>
+                 <RadioGroup onValueChange={(value) => register('accountType').onChange({ target: { value } })} className="flex">
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="candidate" id="candidate" />
                         <Label htmlFor="candidate">Sou candidato</Label>
@@ -87,8 +103,8 @@ export default function SignupPage() {
             </div>
 
 
-            <Button type="submit" className="w-full">
-                Criar conta
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? 'Criando conta...' : 'Criar conta'}
             </Button>
             <Button variant="outline" className="w-full">
                 Cadastrar com Google

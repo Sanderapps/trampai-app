@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -14,22 +13,39 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+  accountType: z.enum(['candidate', 'employer'], { required_error: 'Selecione o tipo de conta' }),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
+  const router = useRouter();
+  const { toast } = useToast();
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = (data: LoginFormValues) => {
+  const onSubmit = async (data: LoginFormValues) => {
+    await new Promise(resolve => setTimeout(resolve, 1000));
     console.log(data);
-    // Handle login logic
+    
+    toast({
+      title: 'Login bem-sucedido!',
+    });
+
+    if (data.accountType === 'candidate') {
+      router.push('/candidate/dashboard');
+    } else {
+      router.push('/employer/dashboard');
+    }
   };
 
   return (
@@ -63,8 +79,24 @@ export default function LoginPage() {
               <Input id="password" type="password" {...register('password')} />
               {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
             </div>
-            <Button type="submit" className="w-full">
-              Entrar
+            
+            <div className="grid gap-2">
+                <Label>Acessar como</Label>
+                <RadioGroup onValueChange={(value) => register('accountType').onChange({ target: { value } })} className="flex">
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="candidate" id="candidate" />
+                        <Label htmlFor="candidate">Candidato</Label>
+                    </div>
+                     <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="employer" id="employer" />
+                        <Label htmlFor="employer">Empregador</Label>
+                    </div>
+                </RadioGroup>
+                {errors.accountType && <p className="text-sm text-destructive">{errors.accountType.message}</p>}
+            </div>
+
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? 'Entrando...' : 'Entrar'}
             </Button>
             <Button variant="outline" className="w-full">
               Entrar com Google

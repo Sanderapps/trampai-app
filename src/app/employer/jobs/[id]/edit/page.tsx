@@ -23,12 +23,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Job } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
+type SalaryType = 'fixed' | 'range' | 'from' | 'up_to' | 'tbd';
+
 const jobSchema = z.object({
   jobTitle: z.string().min(3, 'Título da vaga é obrigatório'),
   keywords: z.string().min(3, 'Palavras-chave são obrigatórias'),
   jobDescription: z.string().min(50, 'Descrição da vaga é obrigatória'),
   location: z.string().min(3, 'Localização é obrigatória'),
   type: z.string({ required_error: 'Tipo de contrato é obrigatório' }),
+  salaryType: z.custom<SalaryType>().optional(),
+  salaryValue: z.coerce.number().optional(),
   salaryMin: z.coerce.number().optional(),
   salaryMax: z.coerce.number().optional(),
   dailyRate: z.coerce.number().optional(),
@@ -68,6 +72,9 @@ export default function EditJobPage() {
     },
   });
 
+  const contractType = watch('type');
+  const salaryType = watch('salaryType');
+
   useEffect(() => {
     if (!jobId) return;
 
@@ -85,10 +92,31 @@ export default function EditJobPage() {
                 setValue('jobDescription', data.description);
                 setValue('location', data.location);
                 setValue('type', data.type);
+                
                 if (data.salary) {
-                    setValue('salaryMin', data.salary.min);
-                    setValue('salaryMax', data.salary.max);
+                    if (data.salary.min && data.salary.max) {
+                        if(data.salary.min === data.salary.max) {
+                            setValue('salaryType', 'fixed');
+                            setValue('salaryValue', data.salary.min);
+                        } else {
+                            setValue('salaryType', 'range');
+                            setValue('salaryMin', data.salary.min);
+                            setValue('salaryMax', data.salary.max);
+                        }
+                    } else if (data.salary.min) {
+                        setValue('salaryType', 'from');
+                        setValue('salaryValue', data.salary.min);
+                    } else if (data.salary.max) {
+                        setValue('salaryType', 'up_to');
+                        setValue('salaryValue', data.salary.max);
+                    } else {
+                        setValue('salaryType', 'tbd');
+                    }
+                } else {
+                     setValue('salaryType', 'tbd');
                 }
+
+
                 if (data.dailyRate) {
                     setValue('dailyRate', data.dailyRate);
                 }
@@ -134,7 +162,7 @@ export default function EditJobPage() {
   
   const jobTitle = watch('jobTitle');
   const keywords = watch('keywords');
-  const contractType = watch('type');
+
 
   const handleGenerateDescription = async () => {
     if (!jobTitle || !keywords) {
@@ -171,6 +199,26 @@ export default function EditJobPage() {
         return;
     }
 
+    let salaryData = null;
+    switch(data.salaryType) {
+        case 'fixed':
+            salaryData = { min: data.salaryValue || null, max: data.salaryValue || null };
+            break;
+        case 'range':
+            salaryData = { min: data.salaryMin || null, max: data.salaryMax || null };
+            break;
+        case 'from':
+             salaryData = { min: data.salaryValue || null, max: null };
+            break;
+        case 'up_to':
+             salaryData = { min: null, max: data.salaryValue || null };
+            break;
+        case 'tbd':
+        default:
+            salaryData = null;
+            break;
+    }
+
     try {
         const jobDocRef = doc(db, 'jobs', jobId);
         
@@ -180,7 +228,7 @@ export default function EditJobPage() {
             location: data.location,
             type: data.type,
             keywords: data.keywords.split(',').map(k => k.trim()),
-            salary: (data.salaryMin || data.salaryMax) ? { min: data.salaryMin || null, max: data.salaryMax || null } : null,
+            salary: salaryData,
             dailyRate: data.dailyRate || null,
             benefits: {
                 ...data.benefits,
@@ -217,6 +265,28 @@ export default function EditJobPage() {
   if (!user || !userProfile || userProfile.accountType !== 'employer' || !job) {
      return notFound();
   }
+  
+  const renderSalaryInputs = () => {
+    switch(salaryType) {
+      case 'fixed':
+        return <div className="space-y-2"><Label htmlFor="salaryValue">Valor Fixo (R$)</Label><Input id="salaryValue" type="number" placeholder="Ex: 5000" {...register('salaryValue')} /></div>
+      case 'range':
+        return (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2"><Label htmlFor="salaryMin">Mínimo (R$)</Label><Input id="salaryMin" type="number" placeholder="Ex: 4000" {...register('salaryMin')} /></div>
+            <div className="space-y-2"><Label htmlFor="salaryMax">Máximo (R$)</Label><Input id="salaryMax" type="number" placeholder="Ex: 6000" {...register('salaryMax')} /></div>
+          </div>
+        );
+      case 'from':
+         return <div className="space-y-2"><Label htmlFor="salaryValue">A partir de (R$)</Label><Input id="salaryValue" type="number" placeholder="Ex: 4000" {...register('salaryValue')} /></div>
+      case 'up_to':
+         return <div className="space-y-2"><Label htmlFor="salaryValue">Até (R$)</Label><Input id="salaryValue" type="number" placeholder="Ex: 6000" {...register('salaryValue')} /></div>
+      case 'tbd':
+      default:
+        return null;
+    }
+  };
+
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
@@ -289,15 +359,25 @@ export default function EditJobPage() {
                     <Input id="dailyRate" type="number" placeholder="Ex: 300" {...register('dailyRate')} />
                 </div>
             ) : (
-                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="salaryMin">Salário (mínimo, opcional)</Label>
-                    <Input id="salaryMin" type="number" placeholder="Ex: 4000" {...register('salaryMin')} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="salaryMax">Salário (máximo, opcional)</Label>
-                    <Input id="salaryMax" type="number" placeholder="Ex: 6000" {...register('salaryMax')} />
-                  </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                   <div className="space-y-2">
+                        <Label>Remuneração</Label>
+                        <Select onValueChange={(value: SalaryType) => setValue('salaryType', value, { shouldValidate: true })} value={salaryType}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="tbd">A combinar</SelectItem>
+                                <SelectItem value="fixed">Valor Fixo</SelectItem>
+                                <SelectItem value="range">Faixa Salarial</SelectItem>
+                                <SelectItem value="from">A partir de</SelectItem>
+                                <SelectItem value="up_to">Até</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className='md:col-span-2'>
+                        {renderSalaryInputs()}
+                    </div>
                 </div>
             )}
 
@@ -351,3 +431,5 @@ export default function EditJobPage() {
     </div>
   );
 }
+
+    

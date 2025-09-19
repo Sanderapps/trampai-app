@@ -22,12 +22,16 @@ import { companies } from '@/lib/data';
 import Link from 'next/link';
 import { Checkbox } from '@/components/ui/checkbox';
 
+type SalaryType = 'fixed' | 'range' | 'from' | 'up_to' | 'tbd';
+
 const jobSchema = z.object({
   jobTitle: z.string().min(3, 'Título da vaga é obrigatório'),
   keywords: z.string().min(3, 'Palavras-chave são obrigatórias'),
   jobDescription: z.string().min(50, 'Descrição da vaga é obrigatória'),
   location: z.string().min(3, 'Localização é obrigatória'),
   type: z.string({ required_error: 'Tipo de contrato é obrigatório' }),
+  salaryType: z.custom<SalaryType>().optional(),
+  salaryValue: z.coerce.number().optional(),
   salaryMin: z.coerce.number().optional(),
   salaryMax: z.coerce.number().optional(),
   dailyRate: z.coerce.number().optional(),
@@ -60,6 +64,7 @@ export default function NewJobPage() {
         hasHealthPlan: false,
         others: Array(5).fill(''),
       },
+      salaryType: 'tbd',
     },
   });
 
@@ -77,6 +82,7 @@ export default function NewJobPage() {
   const jobTitle = watch('jobTitle');
   const keywords = watch('keywords');
   const contractType = watch('type');
+  const salaryType = watch('salaryType');
 
   const handleGenerateDescription = async () => {
     if (!jobTitle || !keywords) {
@@ -113,6 +119,26 @@ export default function NewJobPage() {
         return;
     }
 
+    let salaryData = null;
+    switch(data.salaryType) {
+        case 'fixed':
+            salaryData = { min: data.salaryValue || null, max: data.salaryValue || null };
+            break;
+        case 'range':
+            salaryData = { min: data.salaryMin || null, max: data.salaryMax || null };
+            break;
+        case 'from':
+             salaryData = { min: data.salaryValue || null, max: null };
+            break;
+        case 'up_to':
+             salaryData = { min: null, max: data.salaryValue || null };
+            break;
+        case 'tbd':
+        default:
+            salaryData = null;
+            break;
+    }
+
     try {
         // In a real app, the employer would be linked to a company profile.
         // For now, we mock finding a company for the logged-in user.
@@ -129,7 +155,7 @@ export default function NewJobPage() {
             companyId: company?.id,
             companyName: company?.name,
             employerId: user.uid,
-            salary: (data.salaryMin || data.salaryMax) ? { min: data.salaryMin || null, max: data.salaryMax || null } : null,
+            salary: salaryData,
             dailyRate: data.dailyRate || null,
             benefits: {
                 ...data.benefits,
@@ -169,6 +195,28 @@ export default function NewJobPage() {
         </div>
      )
   }
+
+  const renderSalaryInputs = () => {
+    switch(salaryType) {
+      case 'fixed':
+        return <div className="space-y-2"><Label htmlFor="salaryValue">Valor Fixo (R$)</Label><Input id="salaryValue" type="number" placeholder="Ex: 5000" {...register('salaryValue')} /></div>
+      case 'range':
+        return (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2"><Label htmlFor="salaryMin">Mínimo (R$)</Label><Input id="salaryMin" type="number" placeholder="Ex: 4000" {...register('salaryMin')} /></div>
+            <div className="space-y-2"><Label htmlFor="salaryMax">Máximo (R$)</Label><Input id="salaryMax" type="number" placeholder="Ex: 6000" {...register('salaryMax')} /></div>
+          </div>
+        );
+      case 'from':
+         return <div className="space-y-2"><Label htmlFor="salaryValue">A partir de (R$)</Label><Input id="salaryValue" type="number" placeholder="Ex: 4000" {...register('salaryValue')} /></div>
+      case 'up_to':
+         return <div className="space-y-2"><Label htmlFor="salaryValue">Até (R$)</Label><Input id="salaryValue" type="number" placeholder="Ex: 6000" {...register('salaryValue')} /></div>
+      case 'tbd':
+      default:
+        return null;
+    }
+  };
+
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
@@ -233,15 +281,25 @@ export default function NewJobPage() {
                     <Input id="dailyRate" type="number" placeholder="Ex: 300" {...register('dailyRate')} />
                 </div>
             ) : (
-                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="salaryMin">Salário (mínimo, opcional)</Label>
-                    <Input id="salaryMin" type="number" placeholder="Ex: 4000" {...register('salaryMin')} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="salaryMax">Salário (máximo, opcional)</Label>
-                    <Input id="salaryMax" type="number" placeholder="Ex: 6000" {...register('salaryMax')} />
-                  </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                   <div className="space-y-2">
+                        <Label>Remuneração</Label>
+                        <Select onValueChange={(value: SalaryType) => setValue('salaryType', value, { shouldValidate: true })} value={salaryType}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="tbd">A combinar</SelectItem>
+                                <SelectItem value="fixed">Valor Fixo</SelectItem>
+                                <SelectItem value="range">Faixa Salarial</SelectItem>
+                                <SelectItem value="from">A partir de</SelectItem>
+                                <SelectItem value="up_to">Até</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className='md:col-span-2'>
+                        {renderSalaryInputs()}
+                    </div>
                 </div>
             )}
 
@@ -296,3 +354,5 @@ export default function NewJobPage() {
     </div>
   );
 }
+
+    

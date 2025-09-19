@@ -40,18 +40,24 @@ export default function CategoryPage() {
         const q = query(
             jobsCollection, 
             where('keywords', 'array-contains', categoryName.toLowerCase()), 
-            where('status', '==', 'Aberta'),
             orderBy('postedAt', 'desc'),
-            limit(6)
+            limit(12) // fetch more to filter client-side
         );
         const jobSnapshot = await getDocs(q);
-        const jobList = jobSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
+        let jobList = jobSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as Job))
+            .filter(job => job.status !== 'Fechada');
         
+        jobList = jobList.slice(0, 6);
+
         // Fallback to fetching any 3 jobs if category search yields no results for this mock.
         if (jobList.length === 0) {
-          const fallbackQuery = query(jobsCollection, where('status', '==', 'Aberta'), orderBy('postedAt', 'desc'), limit(3));
+          const fallbackQuery = query(jobsCollection, orderBy('postedAt', 'desc'), limit(6));
           const fallbackSnapshot = await getDocs(fallbackQuery);
-          const fallbackList = fallbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
+          const fallbackList = fallbackSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as Job))
+            .filter(job => job.status !== 'Fechada')
+            .slice(0, 3);
           setFilteredJobs(fallbackList);
         } else {
           setFilteredJobs(jobList);

@@ -18,13 +18,15 @@ export default function JobsPage() {
       setLoading(true);
       try {
         const jobsCollection = collection(db, 'jobs');
+        // Temporarily remove status filter to show all jobs
         const q = query(
-          jobsCollection, 
-          where('status', '==', 'Aberta'), 
+          jobsCollection,
           orderBy('postedAt', 'desc')
         );
         const jobSnapshot = await getDocs(q);
-        const jobList = jobSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
+        const jobList = jobSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as Job))
+            .filter(job => job.status !== 'Fechada'); // Filter out closed jobs on the client
         setJobs(jobList);
       } catch (error) {
         console.error("Error fetching jobs:", error);

@@ -26,10 +26,14 @@ function SearchResults() {
       setLoading(true);
       try {
         const jobsCollection = collection(db, 'jobs');
-        const qSnapshot = await getDocs(query(jobsCollection, where('status', '==', 'Aberta'), orderBy('postedAt', 'desc')));
+        // Fetch all jobs first, then filter client-side
+        const qSnapshot = await getDocs(query(jobsCollection, orderBy('postedAt', 'desc')));
         const allJobs = qSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
 
         const filtered = allJobs.filter(job => {
+          // Rule 1: Don't show closed jobs
+          if (job.status === 'Fechada') return false;
+
           const queryLower = q.toLowerCase();
           const locationLower = location.toLowerCase();
 

@@ -52,9 +52,13 @@ export default function Home() {
       setLoading(true);
       try {
         const jobsCollection = collection(db, 'jobs');
-        const q = query(jobsCollection, where("status", "==", "Aberta"), orderBy('postedAt', 'desc'), limit(6));
+        // Temporarily remove status filter to show all jobs
+        const q = query(jobsCollection, orderBy('postedAt', 'desc'), limit(12));
         const jobSnapshot = await getDocs(q);
-        const jobList = jobSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
+        const jobList = jobSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as Job))
+            .filter(job => job.status !== 'Fechada') // Filter out closed jobs on the client
+            .slice(0, 6); // Take the first 6 open jobs
         setJobs(jobList);
       } catch (error) {
         console.error("Error fetching jobs:", error);

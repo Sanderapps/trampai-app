@@ -84,9 +84,9 @@ export function JobCard({ job }: JobCardProps) {
     if (!job.benefits) return null;
 
     const benefitsMap = {
-      hasVT: 'VT',
-      hasVR: 'VR',
-      hasVA: 'VA',
+      hasVT: 'Vale-transporte',
+      hasVR: 'Vale-refeição',
+      hasVA: 'Vale-alimentação',
       hasHealthPlan: 'Plano de Saúde',
       hasCommission: 'Comissão',
     };
@@ -95,15 +95,30 @@ export function JobCard({ job }: JobCardProps) {
       .filter(([key, value]) => value === true && key in benefitsMap)
       .map(([key]) => benefitsMap[key as keyof typeof benefitsMap]);
     
-    if (available.length === 0 && !job.benefits.others) return null;
+    const hasOthers = job.benefits.others && job.benefits.others.trim() !== '';
 
-    let summary = available.slice(0, 2).join(' + ');
-    if (available.length > 2 || job.benefits.others) {
-      summary += ' e mais...';
-    } else if (available.length === 0 && job.benefits.others) {
-      summary = 'Benefícios adicionais';
+    if (available.length === 0 && !hasOthers) return null;
+    
+    const totalBenefits = available.length + (hasOthers ? 1 : 0);
+    const benefitsToShow = available.slice(0, 3);
+    
+    let summary = benefitsToShow.join(', ');
+
+    if (totalBenefits > 3) {
+      summary += '...';
+    } else if (hasOthers && totalBenefits <= 3) {
+       if(available.length > 0) {
+         summary += `, ${job.benefits.others}`;
+       } else {
+         summary = job.benefits.others!;
+       }
     }
     
+    // Truncate if still too long
+    if(summary.length > 50) {
+      return summary.substring(0, 50) + '...';
+    }
+
     return summary;
   }
 

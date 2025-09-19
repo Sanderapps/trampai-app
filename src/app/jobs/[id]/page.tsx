@@ -2,7 +2,6 @@
 'use client';
 import { Job } from '@/lib/types';
 import { notFound, useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import {
   MapPin,
@@ -29,11 +28,11 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { doc, getDoc, Timestamp, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { companies } from '@/lib/companies';
+import { companies } from '@/lib/data';
 import { formatSalary, getPostedAt } from '@/lib/job-utils';
 import { JobInfoItem } from '@/components/jobs/job-info-item';
 import { BenefitList } from '@/components/jobs/benefit-list';

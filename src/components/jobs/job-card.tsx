@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/tooltip';
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
-import { companies } from '@/lib/companies';
+import { companies } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';

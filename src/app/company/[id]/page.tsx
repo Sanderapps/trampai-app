@@ -83,8 +83,8 @@ export default function CompanyProfilePage() {
         </div>
 
         <div className="flex flex-col items-center gap-6 sm:flex-row">
-            <Avatar className="h-24 w-24 border flex items-center justify-center bg-background">
-                <LogoIcon className="h-12 w-12 text-muted-foreground" />
+            <Avatar className="h-24 w-24 border flex items-center justify-center bg-card">
+                <LogoIcon className="h-12 w-12 text-foreground" />
             </Avatar>
             <div>
                  <h1 className="font-headline text-3xl font-bold">{company.name}</h1>

@@ -10,6 +10,7 @@ import { collection, getDocs, query, where, Timestamp } from "firebase/firestore
 import { db } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { getPostedAt } from "@/lib/job-utils";
 
 export default function CandidateDashboard() {
   const { user, userProfile, loading } = useAuth();
@@ -53,9 +54,9 @@ export default function CandidateDashboard() {
     </div>
   }
 
-  const getAppliedDate = (timestamp: Timestamp) => {
+  const getAppliedDate = (timestamp: Application['appliedAt']) => {
       if (!timestamp) return 'Data indisponível';
-      return new Timestamp(timestamp.seconds, timestamp.nanoseconds).toDate().toLocaleDateString('pt-BR');
+      return getPostedAt(timestamp).toLocaleDateString('pt-BR');
   }
 
   const getBadgeVariant = (status: Application['status']) => {

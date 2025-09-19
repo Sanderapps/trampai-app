@@ -106,9 +106,6 @@ export default function LoginPage() {
             <div className="grid gap-2">
               <div className="flex items-center">
                 <Label htmlFor="password">Senha</Label>
-                <Link href="#" className="ml-auto inline-block text-sm underline">
-                  Esqueceu a senha?
-                </Link>
               </div>
               <Input id="password" type="password" {...register('password')} />
               {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}

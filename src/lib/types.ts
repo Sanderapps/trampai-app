@@ -1,3 +1,4 @@
+
 import type { Timestamp } from "firebase/firestore";
 import type { LucideIcon } from "lucide-react";
 
@@ -14,6 +15,7 @@ export type Job = {
   companyName: string;
   location: string;
   type: 'CLT' | 'PJ' | 'Extra/Freelancer' | 'Estágio';
+  status: 'Aberta' | 'Fechada';
   salary?: {
     min?: number;
     max?: number;

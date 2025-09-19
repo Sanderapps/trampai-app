@@ -21,7 +21,7 @@ import { JobCard } from '@/components/jobs/job-card';
 import { Card, CardContent } from '@/components/ui/card';
 import { useEffect, useState } from 'react';
 import { Job } from '@/lib/types';
-import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
+import { collection, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import placeholderData from '@/lib/placeholder-images.json';
@@ -39,7 +39,7 @@ const categories = [
 export default function Home() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState('');
+  const [queryVal, setQueryVal] = useState('');
   const [location, setLocation] = useState('');
   const router = useRouter();
 
@@ -52,7 +52,7 @@ export default function Home() {
       setLoading(true);
       try {
         const jobsCollection = collection(db, 'jobs');
-        const q = query(jobsCollection, orderBy('postedAt', 'desc'), limit(6));
+        const q = query(jobsCollection, where("status", "==", "Aberta"), orderBy('postedAt', 'desc'), limit(6));
         const jobSnapshot = await getDocs(q);
         const jobList = jobSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
         setJobs(jobList);
@@ -69,7 +69,7 @@ export default function Home() {
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const searchParams = new URLSearchParams();
-    if(query) searchParams.append('q', query);
+    if(queryVal) searchParams.append('q', queryVal);
     if(location) searchParams.append('location', location);
     
     router.push(`/jobs/search?${searchParams.toString()}`);
@@ -96,8 +96,8 @@ export default function Home() {
                 type="text"
                 placeholder="Cargo, palavra-chave ou empresa"
                 className="w-full pl-10 text-foreground"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                value={queryVal}
+                onChange={(e) => setQueryVal(e.target.value)}
               />
             </div>
             <div className="relative w-full">

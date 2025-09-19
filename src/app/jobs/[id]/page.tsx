@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   Share2,
   Heart,
+  XCircle,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -154,6 +155,7 @@ export default function JobDetailsPage() {
 
   const postedAtDate = getPostedAt(job.postedAt);
   const LogoIcon = company.logo;
+  const isJobClosed = job.status === 'Fechada';
 
   return (
     <div className="bg-muted/30">
@@ -189,6 +191,7 @@ export default function JobDetailsPage() {
                             </div>
                              <div className="mt-4 flex flex-wrap gap-2">
                                 <Badge variant="secondary">{job.type}</Badge>
+                                {isJobClosed && <Badge variant="destructive">Vaga Fechada</Badge>}
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -200,11 +203,17 @@ export default function JobDetailsPage() {
                 </div>
 
                 <div className="space-y-6">
-                    <Button asChild size="lg" className="w-full">
-                        <Link href={`/jobs/${job.id}/apply`}>
-                            <Briefcase className="mr-2 h-4 w-4" /> Candidatar-se Agora
-                        </Link>
-                    </Button>
+                    {isJobClosed ? (
+                        <Button size="lg" className="w-full" disabled>
+                            <XCircle className="mr-2 h-4 w-4" /> Vaga Preenchida
+                        </Button>
+                    ) : (
+                        <Button asChild size="lg" className="w-full">
+                            <Link href={`/jobs/${job.id}/apply`}>
+                                <Briefcase className="mr-2 h-4 w-4" /> Candidatar-se Agora
+                            </Link>
+                        </Button>
+                    )}
 
                     <Card>
                         <CardContent className="space-y-4 pt-6">

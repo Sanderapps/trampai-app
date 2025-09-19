@@ -7,7 +7,7 @@ import { JobCard } from '@/components/jobs/job-card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Job } from '@/lib/types';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,7 +26,7 @@ function SearchResults() {
       setLoading(true);
       try {
         const jobsCollection = collection(db, 'jobs');
-        const qSnapshot = await getDocs(query(jobsCollection, orderBy('postedAt', 'desc')));
+        const qSnapshot = await getDocs(query(jobsCollection, where('status', '==', 'Aberta'), orderBy('postedAt', 'desc')));
         const allJobs = qSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
 
         const filtered = allJobs.filter(job => {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, SubmitHandler } from 'react-hook-form';
@@ -122,6 +123,7 @@ export default function NewJobPage() {
             description: data.jobDescription,
             location: data.location,
             type: data.type,
+            status: 'Aberta', // New field
             keywords: data.keywords.split(',').map(k => k.trim()),
             postedAt: serverTimestamp(),
             companyId: company?.id,

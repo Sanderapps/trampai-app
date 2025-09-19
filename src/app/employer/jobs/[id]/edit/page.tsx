@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, SubmitHandler } from 'react-hook-form';
@@ -185,6 +186,7 @@ export default function EditJobPage() {
                 ...data.benefits,
                 others: data.benefits.others?.filter(b => b.trim() !== '') || [], // Clean up empty strings
             },
+            // We don't update 'status' here, it's only updated when hiring
         };
 
         await updateDoc(jobDocRef, jobData);

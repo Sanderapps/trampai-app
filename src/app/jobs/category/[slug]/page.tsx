@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Job } from '@/lib/types';
 import { useEffect, useState } from 'react';
-import { collection, getDocs, limit, query, where } from 'firebase/firestore';
+import { collection, getDocs, limit, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useParams } from 'next/navigation';
@@ -37,13 +37,19 @@ export default function CategoryPage() {
         const jobsCollection = collection(db, 'jobs');
         // This is a mock filter based on keywords. 
         // In a real app, you'd likely have a dedicated 'category' field.
-        const q = query(jobsCollection, where('keywords', 'array-contains', categoryName.toLowerCase()), limit(6));
+        const q = query(
+            jobsCollection, 
+            where('keywords', 'array-contains', categoryName.toLowerCase()), 
+            where('status', '==', 'Aberta'),
+            orderBy('postedAt', 'desc'),
+            limit(6)
+        );
         const jobSnapshot = await getDocs(q);
         const jobList = jobSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
         
         // Fallback to fetching any 3 jobs if category search yields no results for this mock.
         if (jobList.length === 0) {
-          const fallbackQuery = query(jobsCollection, limit(3));
+          const fallbackQuery = query(jobsCollection, where('status', '==', 'Aberta'), orderBy('postedAt', 'desc'), limit(3));
           const fallbackSnapshot = await getDocs(fallbackQuery);
           const fallbackList = fallbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
           setFilteredJobs(fallbackList);

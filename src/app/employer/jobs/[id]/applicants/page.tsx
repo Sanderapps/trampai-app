@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useRouter, useParams } from 'next/navigation';
@@ -55,7 +56,6 @@ export default function ApplicantsPage() {
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalLoading, setIsModalLoading] = useState(false);
-  const [hiredCandidateId, setHiredCandidateId] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const fetchJobAndApplicants = async (userId: string) => {
@@ -68,18 +68,14 @@ export default function ApplicantsPage() {
           notFound();
           return;
         }
-        setJob({ id: jobDoc.id, ...jobDoc.data() } as Job);
+        const jobData = { id: jobDoc.id, ...jobDoc.data() } as Job;
+        setJob(jobData);
 
         const appsCollection = collection(db, 'applications');
         const q = query(appsCollection, where("jobId", "==", jobId));
         const appSnapshot = await getDocs(q);
         const appList = appSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Application));
         setApplications(appList);
-
-        const hiredApp = appList.find(app => app.status === 'Contratado');
-        if (hiredApp) {
-          setHiredCandidateId(hiredApp.candidateId);
-        }
 
       } catch (error) {
         console.error("Error fetching job and applicants:", error);
@@ -105,16 +101,20 @@ export default function ApplicantsPage() {
   }, [jobId, user, userProfile, authLoading, router]);
 
   const handleHireCandidate = async (applicationToHire: Application) => {
-    if (hiredCandidateId || isUpdatingStatus) return; // Prevent multiple hires
+    if (job?.status === 'Fechada' || isUpdatingStatus) return; // Prevent multiple hires
 
     setIsUpdatingStatus(true);
     const batch = writeBatch(db);
 
-    // 1. Update the hired candidate's status
+    // 1. Update the job status to 'Fechada'
+    const jobRef = doc(db, 'jobs', jobId);
+    batch.update(jobRef, { status: 'Fechada' });
+
+    // 2. Update the hired candidate's status
     const hiredAppRef = doc(db, 'applications', applicationToHire.id);
     batch.update(hiredAppRef, { status: 'Contratado' });
 
-    // 2. Update other candidates' status
+    // 3. Update other candidates' status
     applications.forEach(app => {
       if (app.id !== applicationToHire.id && app.status === 'Em Análise') {
         const appRef = doc(db, 'applications', app.id);
@@ -126,7 +126,7 @@ export default function ApplicantsPage() {
       await batch.commit();
       toast({
         title: "Candidato Contratado!",
-        description: `${applicationToHire.candidateName} foi marcado como contratado para esta vaga.`,
+        description: `${applicationToHire.candidateName} foi marcado como contratado. A vaga foi fechada.`,
       });
       // Refresh data locally to reflect status changes
       if(user) fetchJobAndApplicants(user.uid);
@@ -135,7 +135,7 @@ export default function ApplicantsPage() {
       toast({
         variant: "destructive",
         title: "Erro ao contratar",
-        description: "Não foi possível atualizar o status dos candidatos.",
+        description: "Não foi possível atualizar o status dos candidatos e da vaga.",
       });
     } finally {
       setIsUpdatingStatus(false);
@@ -152,7 +152,12 @@ export default function ApplicantsPage() {
       const userDoc = await getDoc(userDocRef);
       if (userDoc.exists()) {
         const candidateData = userDoc.data() as UserProfile;
-        setSelectedCandidate(candidateData);
+        // Also get photo from auth user object if available
+        setSelectedCandidate({
+            ...candidateData,
+            photoURL: application.candidatePhotoUrl,
+        } as any);
+
       }
     } catch (error) {
       console.error("Error fetching candidate profile:", error);
@@ -198,7 +203,9 @@ export default function ApplicantsPage() {
       default: return 'outline';
     }
   };
-
+  
+  const isJobClosed = job.status === 'Fechada';
+  const hiredCandidateId = applications.find(app => app.status === 'Contratado')?.candidateId;
   const cleanPhoneNumber = formatPhoneNumberForLink(selectedApplication?.candidatePhone || '');
 
   return (
@@ -213,10 +220,15 @@ export default function ApplicantsPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Candidatos para {job.title}</CardTitle>
-          <CardDescription>
-            {applications.length} {applications.length === 1 ? 'candidatura recebida' : 'candidaturas recebidas'} para esta vaga.
-          </CardDescription>
+          <div className='flex items-center justify-between'>
+            <div className='flex-1'>
+              <CardTitle className="text-2xl">Candidatos para {job.title}</CardTitle>
+              <CardDescription>
+                {applications.length} {applications.length === 1 ? 'candidatura recebida' : 'candidaturas recebidas'} para esta vaga.
+              </CardDescription>
+            </div>
+             {isJobClosed && <Badge variant="destructive">Vaga Fechada</Badge>}
+          </div>
         </CardHeader>
         <CardContent>
           {applications.length > 0 ? (
@@ -254,7 +266,7 @@ export default function ApplicantsPage() {
                           variant="secondary"
                           size="sm"
                           onClick={() => handleHireCandidate(app)}
-                          disabled={!!hiredCandidateId || isUpdatingStatus}
+                          disabled={isJobClosed || isUpdatingStatus}
                         >
                             <Star className="mr-2 h-4 w-4" />
                             {hiredCandidateId === app.candidateId ? "Contratado" : "Contratar"}
@@ -292,6 +304,7 @@ export default function ApplicantsPage() {
                     <div className="space-y-6">
                         <div className="flex flex-col sm:flex-row items-start gap-6">
                              <Avatar className="h-24 w-24 border-2 border-primary">
+                                <AvatarImage src={(selectedCandidate as any).photoURL ?? undefined} alt={selectedCandidate.displayName ?? ""} />
                                 <AvatarFallback className="text-3xl">{selectedCandidate.displayName?.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div className='flex-1 space-y-2'>

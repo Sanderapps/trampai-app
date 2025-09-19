@@ -6,7 +6,7 @@ import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { ArrowLeft, Upload, CheckCircle, File as FileIcon, X } from 'lucide-react';
+import { ArrowLeft, Upload, CheckCircle, File as FileIcon, X, XCircle } from 'lucide-react';
 import { addDoc, collection, doc, getDoc, serverTimestamp, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 
@@ -129,8 +129,8 @@ export default function ApplyPage() {
         toast({ variant: 'destructive', title: 'Erro', description: 'Você precisa estar logado para se candidatar.' });
         return;
     }
-    if (!job) {
-        toast({ variant: 'destructive', title: 'Erro', description: 'Vaga não encontrada.' });
+    if (!job || job.status === 'Fechada') {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Esta vaga não está mais aceitando candidaturas.' });
         return;
     }
 
@@ -149,6 +149,7 @@ export default function ApplyPage() {
             candidateEmail: data.email,
             candidatePhone: data.phone,
             candidateSocialUrl: data.socialUrl,
+            candidatePhotoUrl: user.photoURL,
             resumeFile: {
                 name: resumeFile.name,
                 type: resumeFile.type,
@@ -192,6 +193,36 @@ export default function ApplyPage() {
 
   if (!job) {
     notFound();
+  }
+
+  if (job.status === 'Fechada' && !existingApplication) {
+      return (
+         <div className="container mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+             <div className="mb-8">
+                <Button variant="ghost" asChild>
+                    <Link href={`/jobs/${job.id}`}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Voltar para a vaga
+                    </Link>
+                </Button>
+            </div>
+            <Card>
+                <CardHeader className='text-center'>
+                    <XCircle className="mx-auto h-12 w-12 text-destructive" />
+                    <CardTitle className="mt-4 text-2xl">Vaga Fechada</CardTitle>
+                    <CardDescription>
+                       Esta vaga não está mais aceitando candidaturas.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center gap-4">
+                     <p className='text-sm text-muted-foreground'>Confira outras oportunidades na nossa plataforma.</p>
+                     <Button asChild>
+                        <Link href="/jobs">Buscar Vagas</Link>
+                     </Button>
+                </CardContent>
+            </Card>
+        </div>
+      )
   }
   
   if (!user) {
@@ -340,7 +371,3 @@ export default function ApplyPage() {
     </div>
   );
 }
-
-    
-
-    

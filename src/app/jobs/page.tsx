@@ -1,9 +1,10 @@
+
 'use client';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { JobCard } from '@/components/jobs/job-card';
 import { Button } from '@/components/ui/button';
 import { Job } from '@/lib/types';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,7 +18,11 @@ export default function JobsPage() {
       setLoading(true);
       try {
         const jobsCollection = collection(db, 'jobs');
-        const q = query(jobsCollection, orderBy('postedAt', 'desc'));
+        const q = query(
+          jobsCollection, 
+          where('status', '==', 'Aberta'), 
+          orderBy('postedAt', 'desc')
+        );
         const jobSnapshot = await getDocs(q);
         const jobList = jobSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
         setJobs(jobList);

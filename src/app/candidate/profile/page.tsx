@@ -7,17 +7,34 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { resumeAutoFill } from '@/ai/flows/resume-auto-fill';
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Camera } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { updateProfile } from "firebase/auth";
+import { auth } from "@/lib/firebase/client";
+
+// Helper function to convert file to Base64
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = error => reject(error);
+    });
+};
+
 
 export default function CandidateProfilePage() {
-  const { user, loading } = useAuth();
+  const { user, loading, reloadUserData } = useAuth();
   const { register, setValue, handleSubmit, watch } = useForm();
   const { toast } = useToast();
   const [isParsing, setIsParsing] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState(user?.photoURL);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const resumeText = watch('resumeText');
 
@@ -25,6 +42,7 @@ export default function CandidateProfilePage() {
     if (user) {
       setValue("name", user.displayName || "");
       setValue("email", user.email || "");
+      setPhotoUrl(user.photoURL);
       // In a real app, you would fetch and set the rest of the profile data
     }
   }, [user, setValue]);
@@ -43,9 +61,6 @@ export default function CandidateProfilePage() {
     toast({ title: "Analisando seu currículo...", description: "Aguarde enquanto nossa IA extrai suas informações." });
 
     try {
-      // The current flow expects a data URI, but we can adapt it or the flow.
-      // For now, let's create a "fake" data URI from the text to match the flow's expectation.
-      // A better approach would be to have a flow that just takes text. I'll adjust the flow.
       const result = await resumeAutoFill({ resumeText });
       
       setValue("name", result.name || user?.displayName);
@@ -71,11 +86,49 @@ export default function CandidateProfilePage() {
     }
   };
 
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
 
-  const onSubmit = (data: any) => {
-    console.log("Profile data saved:", data);
-    // Here you would typically update the user's profile in your database
-    toast({ title: "Perfil salvo!", description: "Suas informações foram atualizadas."})
+    if (file.size > 1024 * 1024) { // 1MB limit
+        toast({
+            variant: "destructive",
+            title: "Arquivo muito grande",
+            description: "A foto de perfil deve ter no máximo 1MB.",
+        });
+        return;
+    }
+
+    try {
+        const base64Photo = await fileToBase64(file);
+        await updateProfile(auth.currentUser!, { photoURL: base64Photo });
+        setPhotoUrl(base64Photo);
+        reloadUserData(); // Refresh user data in context
+        toast({
+            title: "Foto de perfil atualizada!",
+        });
+    } catch (error) {
+        console.error("Error uploading photo:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao enviar foto",
+            description: "Não foi possível atualizar sua foto de perfil.",
+        });
+    }
+  }
+
+
+  const onSubmit = async (data: any) => {
+    if (!user) return;
+    try {
+        await updateProfile(user, { displayName: data.name });
+        console.log("Profile data saved:", data);
+        reloadUserData();
+        // Here you would typically update the user's profile in your database
+        toast({ title: "Perfil salvo!", description: "Suas informações foram atualizadas."})
+    } catch(e) {
+        toast({ title: "Erro ao salvar", description: "Não foi possível atualizar o seu nome."})
+    }
   };
 
   if (loading) {
@@ -92,8 +145,33 @@ export default function CandidateProfilePage() {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-      <h1 className="font-headline text-3xl font-bold">Meu Perfil</h1>
-      <p className="mt-1 text-muted-foreground">Mantenha seus dados atualizados para aumentar suas chances.</p>
+      <div className="flex flex-col items-center gap-6 sm:flex-row">
+        <div className="relative">
+            <Avatar className="h-24 w-24 border-2 border-primary">
+                <AvatarImage src={photoUrl ?? undefined} alt={user.displayName ?? ""} />
+                <AvatarFallback className="text-3xl">{user.displayName?.charAt(0)}</AvatarFallback>
+            </Avatar>
+             <Button 
+                variant="outline"
+                size="icon"
+                className="absolute bottom-0 right-0 rounded-full"
+                onClick={() => fileInputRef.current?.click()}
+             >
+                <Camera className="h-4 w-4" />
+             </Button>
+             <Input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/png, image/jpeg"
+                onChange={handlePhotoUpload}
+            />
+        </div>
+        <div>
+            <h1 className="font-headline text-3xl font-bold">{user.displayName}</h1>
+            <p className="mt-1 text-muted-foreground">Mantenha seus dados atualizados para aumentar suas chances.</p>
+        </div>
+      </div>
       
       <form onSubmit={handleSubmit(onSubmit)}>
         <Card className="mt-8">

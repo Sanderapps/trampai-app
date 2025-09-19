@@ -13,8 +13,6 @@ import {
   ArrowLeft,
   Share2,
   Heart,
-  Gift,
-  Check,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -32,7 +30,10 @@ import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { companies } from '@/lib/data';
+import { companies } from '@/lib/companies';
+import { formatSalary, getPostedAt } from '@/lib/job-utils';
+import { JobInfoItem } from '@/components/jobs/job-info-item';
+import { BenefitList } from '@/components/jobs/benefit-list';
 
 export default function JobDetailsPage() {
   const params = useParams();
@@ -90,62 +91,7 @@ export default function JobDetailsPage() {
     return notFound();
   }
 
-  const formatSalary = (job: Job) => {
-    if (job.type === 'Extra/Freelancer') {
-      return job.dailyRate
-        ? `R$ ${job.dailyRate.toLocaleString('pt-BR')} / dia`
-        : 'A combinar';
-    }
-    if (!job.salary || (!job.salary.min && !job.salary.max)) {
-      return 'A combinar';
-    }
-    if (job.salary.min && job.salary.max) {
-      if (job.salary.min === job.salary.max) {
-        return `R$ ${job.salary.min.toLocaleString('pt-BR')}`;
-      }
-      return `R$ ${job.salary.min.toLocaleString('pt-BR')} - R$ ${job.salary.max.toLocaleString('pt-BR')}`;
-    }
-    if (job.salary.min) {
-      return `A partir de R$ ${job.salary.min.toLocaleString('pt-BR')}`;
-    }
-    if (job.salary.max) {
-      return `Até R$ ${job.salary.max.toLocaleString('pt-BR')}`;
-    }
-    return 'A combinar';
-  };
-
-  const getPostedAt = () => {
-    if (job.postedAt instanceof Timestamp) {
-      return job.postedAt.toDate();
-    }
-    // Firestore Timestamps can sometimes be hydrated as objects with seconds and nanoseconds
-    if (job.postedAt && 'seconds' in job.postedAt) {
-      return new Timestamp(job.postedAt.seconds, job.postedAt.nanoseconds).toDate();
-    }
-    return new Date(); // Fallback
-  }
-  
-  const benefitList = job.benefits ? Object.entries(job.benefits)
-    .filter(([key, value]) => value === true && key !== 'others')
-    .map(([key]) => {
-        switch(key) {
-            case 'hasCommission': return 'Comissão';
-            case 'hasVT': return 'Vale-transporte (VT)';
-            case 'hasVR': return 'Vale-refeição (VR)';
-            case 'hasVA': return 'Vale-alimentação (VA)';
-            case 'hasHealthPlan': return 'Plano de Saúde';
-            default: return null;
-        }
-    }).filter(Boolean) as string[] : [];
-
-    const otherBenefitsRaw = job.benefits?.others || [];
-    const otherBenefits = (Array.isArray(otherBenefitsRaw) ? otherBenefitsRaw : Object.values(otherBenefitsRaw))
-                           .filter(b => typeof b === 'string' && b.trim() !== '');
-
-    const allBenefits = [...benefitList, ...otherBenefits];
-
-    const hasBenefits = allBenefits.length > 0;
-
+  const postedAtDate = getPostedAt(job.postedAt);
 
   return (
     <div className="bg-muted/30">
@@ -184,32 +130,11 @@ export default function JobDetailsPage() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="prose max-w-none text-foreground">
-                                <p>{job.description}</p>
-                            </div>
+                            <div className="prose max-w-none text-foreground" dangerouslySetInnerHTML={{ __html: job.description.replace(/\n/g, '<br />') }}/>
                         </CardContent>
                     </Card>
 
-                    {hasBenefits && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-xl">
-                                    <Gift className="h-5 w-5 text-primary" />
-                                    Benefícios
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                    {allBenefits.map(benefit => (
-                                        <li key={benefit} className="flex items-center gap-2">
-                                            <Check className="h-4 w-4 text-green-500" />
-                                            <span>{benefit}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </CardContent>
-                        </Card>
-                    )}
+                    <BenefitList benefits={job.benefits} />
                 </div>
 
                 <div className="space-y-6">
@@ -221,27 +146,13 @@ export default function JobDetailsPage() {
 
                     <Card>
                         <CardContent className="space-y-4 pt-6">
-                            <div className="flex items-center gap-3 text-sm">
-                                <MapPin className="h-5 w-5 text-muted-foreground" />
-                                <div>
-                                    <p className="font-semibold">Localização</p>
-                                    <p className="text-muted-foreground">{job.location}</p>
-                                </div>
-                            </div>
-                             <div className="flex items-center gap-3 text-sm">
-                                <BadgeDollarSign className="h-5 w-5 text-muted-foreground" />
-                                <div>
-                                    <p className="font-semibold">Remuneração</p>
-                                    <p className="text-muted-foreground">{formatSalary(job)}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3 text-sm">
-                                <Clock className="h-5 w-5 text-muted-foreground" />
-                                <div>
-                                    <p className="font-semibold">Publicado</p>
-                                    <p className="text-muted-foreground">{formatDistanceToNow(getPostedAt(), { addSuffix: true, locale: ptBR })}</p>
-                                </div>
-                            </div>
+                            <JobInfoItem icon={MapPin} label="Localização" value={job.location} />
+                            <JobInfoItem icon={BadgeDollarSign} label="Remuneração" value={formatSalary(job)} />
+                            <JobInfoItem
+                                icon={Clock}
+                                label="Publicado"
+                                value={formatDistanceToNow(postedAtDate, { addSuffix: true, locale: ptBR })}
+                            />
                         </CardContent>
                     </Card>
 

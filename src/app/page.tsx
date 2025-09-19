@@ -24,6 +24,7 @@ import { Job } from '@/lib/types';
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import placeholderData from '@/lib/placeholder-images.json';
 
 const categories = [
   { name: 'Restaurantes', icon: UtensilsCrossed, slug: 'restaurantes' },
@@ -37,6 +38,9 @@ const categories = [
 export default function Home() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const heroImage = placeholderData.placeholderImages.find(img => img.id === 'hero-bg');
+  const employerImage = placeholderData.placeholderImages.find(img => img.id === 'employer-cta');
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -59,21 +63,11 @@ export default function Home() {
 
   return (
     <div className="flex flex-col">
-      <section className="relative -mt-[var(--header-height)] flex h-[500px] flex-col justify-center">
-        <div className="absolute inset-0">
-            <Image 
-                src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=2070&auto=format&fit=crop"
-                alt="Pessoas trabalhando em um escritório moderno"
-                fill
-                className='object-cover'
-                data-ai-hint="people working"
-                priority
-            />
-            <div className='absolute inset-0 bg-black/60'></div>
-        </div>
+      <section className="relative -mt-[var(--header-height)] flex h-[500px] flex-col justify-center bg-primary">
+         <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-secondary/70"></div>
         <div className="relative mx-auto w-full max-w-7xl px-4 text-center text-primary-foreground sm:px-6 lg:px-8">
           <h1 className="font-headline text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-            Encontre seu próximo <span className="text-primary">trampo</span> no RS
+            Encontre seu próximo <span className="text-secondary">trampo</span> no RS
           </h1>
           <p className="mt-6 max-w-3xl mx-auto text-lg leading-8">
             A plataforma de empregos que conecta talentos e empresas no Rio Grande do Sul.
@@ -117,11 +111,7 @@ export default function Home() {
              <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
                 <div key={i} className="flex flex-col space-y-3">
-                    <Skeleton className="h-[125px] w-full rounded-xl" />
-                    <div className="space-y-2">
-                        <Skeleton className="h-4 w-[250px]" />
-                        <Skeleton className="h-4 w-[200px]" />
-                    </div>
+                    <Skeleton className="h-[250px] w-full rounded-xl" />
                 </div>
             ))}
             </div>
@@ -189,14 +179,16 @@ export default function Home() {
               </div>
             </div>
             <div className="aspect-h-3 aspect-w-5 -mt-6 md:aspect-h-1 md:aspect-w-2">
-              <Image
-                className="translate-x-6 translate-y-6 transform rounded-md object-cover object-left-top sm:translate-x-16 lg:translate-y-20"
-                src="https://images.unsplash.com/photo-1551818255-ac24e7529f79?q=80&w=800&auto=format&fit=crop"
-                alt="Empregador analisando currículos"
-                width={800}
-                height={533}
-                data-ai-hint="person hiring"
-              />
+             {employerImage && (
+                <Image
+                    className="translate-x-6 translate-y-6 transform rounded-md object-cover object-left-top sm:translate-x-16 lg:translate-y-20"
+                    src={employerImage.imageUrl}
+                    alt={employerImage.description}
+                    width={800}
+                    height={533}
+                    data-ai-hint={employerImage.imageHint}
+                />
+             )}
             </div>
           </div>
         </div>

@@ -1,5 +1,4 @@
-
-import { Timestamp } from "firebase/firestore";
+import type { Timestamp } from "firebase/firestore";
 
 export type Company = {
   id: string;
@@ -21,13 +20,9 @@ export type Job = {
   };
   dailyRate?: number;
   description: string;
-  postedAt: Date | Timestamp | { seconds: number, nanoseconds: number };
+  postedAt: Timestamp; // Simplified to always be a Firestore Timestamp
   employerId: string;
   keywords?: string[];
-  contact?: {
-    email: string;
-    whatsapp: string;
-  };
   benefits?: {
     hasCommission: boolean;
     hasVT: boolean;

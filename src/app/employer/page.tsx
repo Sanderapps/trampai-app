@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CheckCircle } from 'lucide-react';
 import Image from 'next/image';
+import placeholderData from '@/lib/placeholder-images.json';
 
 const features = [
   "Publique vagas de forma rápida e fácil",
@@ -12,17 +13,22 @@ const features = [
 ];
 
 export default function EmployerPage() {
+
+    const heroImage = placeholderData.placeholderImages.find(img => img.id === 'employer-hero');
+
   return (
     <div className="bg-background">
         <div className="relative isolate overflow-hidden pt-16">
-        <Image
-            src="https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=2070&auto=format&fit=crop"
-            alt="Dois profissionais apertando as mãos em um acordo"
-            className="absolute inset-0 -z-10 h-full w-full object-cover"
-            width={2070}
-            height={1380}
-            data-ai-hint="handshake deal"
-        />
+        {heroImage && 
+            <Image
+                src={heroImage.imageUrl}
+                alt={heroImage.description}
+                className="absolute inset-0 -z-10 h-full w-full object-cover"
+                width={2070}
+                height={1380}
+                data-ai-hint={heroImage.imageHint}
+            />
+        }
         <div className="absolute inset-0 bg-primary/80 mix-blend-multiply" />
             <div className="mx-auto max-w-5xl px-4 py-24 sm:px-6 lg:px-8 text-center">
                 <h1 className="font-headline text-4xl font-bold tracking-tight text-primary-foreground sm:text-5xl">

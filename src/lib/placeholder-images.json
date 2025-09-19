@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "hero-bg",
-      "description": "People collaborating in a modern office environment.",
-      "imageUrl": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=2070&auto=format&fit=crop",
-      "imageHint": "people working"
+      "description": "A panoramic view of Porto Alegre, the capital of Rio Grande do Sul.",
+      "imageUrl": "https://images.unsplash.com/photo-1593809834442-2713919d5926?q=80&w=2070&auto=format&fit=crop",
+      "imageHint": "city skyline"
     },
     {
       "id": "about-us",
@@ -17,6 +17,12 @@
       "description": "A person reviewing resumes, representing the hiring process.",
       "imageUrl": "https://images.unsplash.com/photo-1551818255-ac24e7529f79?q=80&w=800&auto=format&fit=crop",
       "imageHint": "person hiring"
+    },
+     {
+      "id": "employer-hero",
+      "description": "Two professionals shaking hands in a deal.",
+      "imageUrl": "https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=2070&auto=format&fit=crop",
+      "imageHint": "handshake deal"
     },
     {
       "id": "company-logo-1",

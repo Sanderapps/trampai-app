@@ -1,8 +1,14 @@
-import { jobs } from '@/lib/data';
+'use client';
+
 import { JobCard } from '@/components/jobs/job-card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { Job } from '@/lib/types';
+import { useEffect, useState } from 'react';
+import { collection, getDocs, limit, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const categoryNames: { [key: string]: string } = {
     'restaurantes': 'Restaurantes',
@@ -15,8 +21,40 @@ const categoryNames: { [key: string]: string } = {
 
 export default function CategoryPage({ params }: { params: { slug: string } }) {
   const categoryName = categoryNames[params.slug] || 'Categoria';
-  // This is a mock filter. In a real app, you'd filter jobs by category.
-  const filteredJobs = jobs.slice(0, 3);
+  const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      setLoading(true);
+      try {
+        const jobsCollection = collection(db, 'jobs');
+        // This is a mock filter based on keywords. 
+        // In a real app, you'd likely have a dedicated 'category' field.
+        const q = query(jobsCollection, where('keywords', 'array-contains', categoryName.toLowerCase()), limit(6));
+        const jobSnapshot = await getDocs(q);
+        const jobList = jobSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
+        
+        // Fallback to fetching any 3 jobs if category search yields no results for this mock.
+        if (jobList.length === 0) {
+          const fallbackQuery = query(jobsCollection, limit(3));
+          const fallbackSnapshot = await getDocs(fallbackQuery);
+          const fallbackList = fallbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
+          setFilteredJobs(fallbackList);
+        } else {
+          setFilteredJobs(jobList);
+        }
+
+      } catch (error) {
+        console.error(`Error fetching jobs for category ${categoryName}:`, error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, [categoryName]);
+
 
   return (
     <div className="bg-muted/50">
@@ -37,15 +75,30 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
             Oportunidades no setor de {categoryName}.
           </p>
         </div>
-        <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {filteredJobs.length > 0 ? (
-            filteredJobs.map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))
-          ) : (
-            <p className="col-span-3 text-center text-muted-foreground">Nenhuma vaga encontrada para esta categoria.</p>
-          )}
-        </div>
+        
+        {loading ? (
+             <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex flex-col space-y-3">
+                        <Skeleton className="h-[125px] w-full rounded-xl" />
+                        <div className="space-y-2">
+                            <Skeleton className="h-4 w-[250px]" />
+                            <Skeleton className="h-4 w-[200px]" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        ) : (
+          <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {filteredJobs.length > 0 ? (
+              filteredJobs.map((job) => (
+                <JobCard key={job.id} job={job} />
+              ))
+            ) : (
+              <p className="col-span-3 text-center text-muted-foreground">Nenhuma vaga encontrada para esta categoria.</p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import ReactMarkdown from 'react-markdown';
+
 
 import {
   Card,
@@ -195,7 +197,9 @@ export default function JobDetailsPage() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="prose max-w-none text-foreground" dangerouslySetInnerHTML={{ __html: job.description.replace(/\\n/g, '<br />') }}/>
+                            <article className="prose max-w-none text-foreground">
+                               <ReactMarkdown>{job.description}</ReactMarkdown>
+                            </article>
                         </CardContent>
                     </Card>
 

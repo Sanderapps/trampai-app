@@ -16,9 +16,7 @@ import { updateProfile } from "firebase/auth";
 import { db } from "@/lib/firebase/client";
 import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { conversationalResume } from "@/ai/flows/conversational-resume";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ConversationMessage } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -53,23 +51,11 @@ const profileSchema = z.object({
 });
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
-// Schema for the chat form
-const chatSchema = z.object({
-  message: z.string().min(1, "A mensagem não pode estar vazia."),
-});
-type ChatFormValues = z.infer<typeof chatSchema>;
-
 
 export default function CandidateProfilePage() {
   const { user, userProfile, loading, reloadUserData } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  
-  const [conversation, setConversation] = useState<ConversationMessage[]>([]);
-  const [isBuildingWithAI, setIsBuildingWithAI] = useState(false);
-  const [isAiResponding, setIsAiResponding] = useState(false);
-  
-  const conversationEndRef = useRef<HTMLDivElement>(null);
 
   // Form for manual editing
   const profileForm = useForm<ProfileFormValues>({
@@ -89,110 +75,42 @@ export default function CandidateProfilePage() {
     name: "education",
   });
 
-  // Form for AI chat
-  const chatForm = useForm<ChatFormValues>({
-    resolver: zodResolver(chatSchema),
-  });
-
   // Helper to safely parse JSON strings from Firestore
-  const safeJsonParse = (jsonString: string | undefined, fallback: any = []) => {
+  const safeJsonParse = (jsonString: string | undefined | null, fallback: any = []) => {
     if (!jsonString) return fallback;
     try {
-        if (typeof jsonString === 'object') return jsonString;
+        // If it's already an object (from previous state updates), return it
+        if (typeof jsonString === 'object' && jsonString !== null) return jsonString;
         return JSON.parse(jsonString);
     } catch (e) {
-        console.warn("Failed to parse JSON, falling back.", e);
+        console.warn("Falling back to empty array for JSON parsing.", e);
+        // If parsing fails, it's likely not a JSON string, so we can't process it.
         return fallback;
     }
   };
 
+
   // Populate form with user data on load
   useEffect(() => {
     if (userProfile) {
-      const parsedExperiences = safeJsonParse(userProfile.experience, []);
-      const parsedEducation = safeJsonParse(userProfile.education, []);
-
       profileForm.reset({
         name: userProfile.displayName || '',
         birthDate: userProfile.birthDate ? new Date(userProfile.birthDate) : undefined,
         phone: userProfile.phone || '',
         location: userProfile.location || '',
-        experiences: parsedExperiences,
-        education: parsedEducation,
+        experiences: safeJsonParse(userProfile.experience, []),
+        education: safeJsonParse(userProfile.education, []),
         summary: userProfile.summary || '',
       });
     }
   }, [userProfile, profileForm]);
 
-
-
-  useEffect(() => {
-    conversationEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [conversation]);
   
   useEffect(() => {
     if (!loading && (!user || userProfile?.accountType !== 'candidate')) {
       router.push('/login');
     }
   }, [user, userProfile, loading, router]);
-
-  // --- AI Conversation Logic ---
-  const startConversation = async () => {
-    setIsBuildingWithAI(true);
-    setIsAiResponding(true);
-    setConversation([]);
-    try {
-      const result = await conversationalResume({ history: [] });
-      setConversation(prev => [...prev, { role: 'model', content: result.nextQuestion }]);
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível iniciar o assistente de IA.' });
-      setIsBuildingWithAI(false);
-    } finally {
-      setIsAiResponding(false);
-       setTimeout(() => chatForm.setFocus('message'), 100);
-    }
-  };
-
-  const onSendMessage = async (data: ChatFormValues) => {
-    const userMessage: ConversationMessage = { role: 'user', content: data.message };
-    const newConversation = [...conversation, userMessage];
-    setConversation(newConversation);
-    chatForm.reset();
-    setIsAiResponding(true);
-    
-    try {
-        const result = await conversationalResume({ history: newConversation });
-
-        if (result.isFinished && result.profile) {
-            toast({ title: 'Currículo criado!', description: 'A IA finalizou a criação do seu currículo. Salvando perfil...' });
-            
-            const profileToSave: ProfileFormValues = {
-              name: result.profile.name || '',
-              phone: result.profile.phone || '',
-              location: result.profile.location || '',
-              experiences: result.profile.experiences || [],
-              education: result.profile.education || [],
-              summary: result.profile.summary || '',
-            }
-            await saveProfile(profileToSave);
-            profileForm.reset(profileToSave); // Update the form with AI data
-
-            setConversation(prev => [...prev, { role: 'model', content: result.nextQuestion }]);
-            setIsBuildingWithAI(false);
-
-        } else {
-            setConversation(prev => [...prev, { role: 'model', content: result.nextQuestion }]);
-        }
-
-    } catch (error) {
-        console.error("Error during conversational resume:", error);
-        const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
-        setConversation(prev => [...prev, { role: 'model', content: `Desculpe, ocorreu um erro: ${errorMessage}. Vamos tentar de novo. Qual era a informação que estávamos discutindo?` }]);
-    } finally {
-        setIsAiResponding(false);
-        setTimeout(() => chatForm.setFocus('message'), 100);
-    }
-  };
   
   // --- Manual Save Logic ---
   const saveProfile = async (profileData: ProfileFormValues) => {
@@ -249,80 +167,9 @@ export default function CandidateProfilePage() {
             <h1 className="font-headline text-3xl font-bold">Meu Currículo</h1>
             <p className="mt-1 text-muted-foreground">Mantenha suas informações atualizadas para facilitar suas candidaturas.</p>
         </div>
-        
-         {/* AI Assistant Card */}
-        <Card className="mt-8">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Bot className="text-primary"/>
-                    Assistente de Perfil com IA
-                </CardTitle>
-                 <CardDescription>
-                    Não quer preencher manualmente? Deixe que nossa IA construa seu currículo através de uma conversa rápida.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                {!isBuildingWithAI ? (
-                    <div className="text-center p-4">
-                        <Button onClick={startConversation}>
-                            <Sparkles className="mr-2 h-4 w-4" />
-                            Começar a criar com IA
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="flex flex-col h-[60vh]">
-                        <div className="flex-grow space-y-4 overflow-y-auto pr-4">
-                            {conversation.map((msg, index) => (
-                                <div key={index} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-                                    {msg.role === 'model' && <Avatar className="h-8 w-8"><AvatarFallback><Bot size={20}/></AvatarFallback></Avatar>}
-                                    <div className={`max-w-md rounded-lg p-3 ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                                    </div>
-                                    {msg.role === 'user' && (
-                                      <Avatar className="h-8 w-8">
-                                          <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ""} />
-                                          <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
-                                      </Avatar>
-                                    )}
-                                </div>
-                            ))}
-                             {isAiResponding && (
-                                <div className="flex items-end gap-2">
-                                     <Avatar className="h-8 w-8"><AvatarFallback><Bot size={20}/></AvatarFallback></Avatar>
-                                    <div className="max-w-md rounded-lg p-3 bg-muted">
-                                        <div className="flex items-center gap-2">
-                                           <span className="h-2 w-2 bg-primary rounded-full animate-pulse [animation-delay:-0.3s]"></span>
-                                           <span className="h-2 w-2 bg-primary rounded-full animate-pulse [animation-delay:-0.15s]"></span>
-                                           <span className="h-2 w-2 bg-primary rounded-full animate-pulse"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            <div ref={conversationEndRef} />
-                        </div>
-                        <form onSubmit={chatForm.handleSubmit(onSendMessage)} className="mt-4 flex gap-2">
-                            <Input 
-                                {...chatForm.register("message")}
-                                placeholder="Digite sua resposta..."
-                                autoComplete="off"
-                                disabled={isAiResponding}
-                            />
-                            <Button type="submit" disabled={isAiResponding}>
-                                <Send className="h-4 w-4" />
-                            </Button>
-                        </form>
-                         {chatForm.formState.errors.message && <p className="text-sm text-destructive mt-1">{chatForm.formState.errors.message.message}</p>}
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-        
-        <div className="mt-8 mb-6">
-            <h2 className="text-xl font-semibold">Ou preencha manualmente:</h2>
-        </div>
 
         {/* Manual Profile Form */}
-        <form onSubmit={profileForm.handleSubmit(onManualSubmit)} className="space-y-8">
+        <form onSubmit={profileForm.handleSubmit(onManualSubmit)} className="space-y-8 mt-8">
              <Card>
                 <CardHeader>
                     <CardTitle>Informações Pessoais e de Contato</CardTitle>
@@ -471,3 +318,5 @@ export default function CandidateProfilePage() {
     </div>
   );
 }
+
+    

@@ -27,14 +27,15 @@ export default function EmployerPage() {
                 width={2070}
                 height={1380}
                 data-ai-hint={heroImage.imageHint}
+                priority
             />
         }
-        <div className="absolute inset-0 bg-primary/80 mix-blend-multiply" />
-            <div className="mx-auto max-w-5xl px-4 py-24 sm:px-6 lg:px-8 text-center">
+        <div className="absolute inset-0 bg-black/60" />
+            <div className="mx-auto max-w-5xl px-4 py-24 sm:px-6 lg:px-8 text-center relative z-10">
                 <h1 className="font-headline text-4xl font-bold tracking-tight text-primary-foreground sm:text-5xl">
                     Encontre os <span className="text-secondary">melhores talentos</span> para sua empresa
                 </h1>
-                <p className="mx-auto mt-6 max-w-2xl text-lg text-secondary-foreground/90">
+                <p className="mx-auto mt-6 max-w-2xl text-lg text-primary-foreground/90">
                 Anuncie suas vagas na Trampaí e conecte-se com profissionais qualificados em todo o Rio Grande do Sul.
                 </p>
                 <div className="mt-10 flex items-center justify-center gap-x-6">

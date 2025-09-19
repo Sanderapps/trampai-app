@@ -1,3 +1,4 @@
+'use client';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -28,6 +29,7 @@ export default function EmployerPage() {
                 height={1380}
                 data-ai-hint={heroImage.imageHint}
                 priority
+                fill
             />
         }
         <div className="absolute inset-0 bg-black/60" />
@@ -42,7 +44,7 @@ export default function EmployerPage() {
                 <Button asChild size="lg" variant="secondary">
                     <Link href="/employer/jobs/new">Anunciar Vaga Gratuitamente</Link>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="border-white text-white hover:bg-white/10">
+                <Button asChild variant="outline" size="lg" className="border-white text-white hover:bg-transparent hover:text-white">
                     <Link href="/pricing">Ver Planos</Link>
                 </Button>
                 </div>

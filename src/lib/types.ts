@@ -36,7 +36,7 @@ export type Application = {
     candidateId: string;
     candidateName: string;
     candidateEmail: string;
-    resumeFileName: string;
+    resumeUrl: string;
     coverLetter?: string;
     appliedAt: Timestamp;
     status: 'Em Análise' | 'Visualizado' | 'Rejeitado';

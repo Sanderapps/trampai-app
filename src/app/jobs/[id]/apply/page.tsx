@@ -7,7 +7,9 @@ import { z } from 'zod';
 import Link from 'next/link';
 import { ArrowLeft, Upload } from 'lucide-react';
 import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useEffect, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -16,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Job } from '@/lib/types';
-import { db } from '@/lib/firebase/client';
+import { db, storage } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/auth-context';
 
@@ -81,9 +83,13 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
     }
 
     try {
-        // NOTE: File upload to Firebase Storage is not implemented.
-        // We will just save the file name for now.
         const resumeFile = data.resume[0] as File;
+        const uniqueFileName = `${uuidv4()}-${resumeFile.name}`;
+        const storageRef = ref(storage, `resumes/${user.uid}/${job.id}/${uniqueFileName}`);
+        
+        toast({ title: 'Enviando currículo...', description: 'Aguarde um momento.'});
+        await uploadBytes(storageRef, resumeFile);
+        const resumeUrl = await getDownloadURL(storageRef);
         
         const applicationData = {
             jobId: job.id,
@@ -92,7 +98,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
             candidateId: user.uid,
             candidateName: data.name,
             candidateEmail: data.email,
-            resumeFileName: resumeFile.name,
+            resumeUrl: resumeUrl,
             coverLetter: data.coverLetter || '',
             appliedAt: serverTimestamp(),
             status: 'Em Análise',
@@ -110,7 +116,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
         toast({
             variant: "destructive",
             title: "Erro ao enviar candidatura",
-            description: "Não foi possível salvar sua candidatura. Tente novamente.",
+            description: "Não foi possível salvar sua candidatura. Verifique as regras de segurança do Firebase Storage.",
         });
     }
   };

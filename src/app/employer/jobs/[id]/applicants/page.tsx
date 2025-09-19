@@ -122,9 +122,11 @@ export default function ApplicantsPage({ params }: { params: { id: string } }) {
                     <TableCell className="hidden sm:table-cell">{getAppliedDate(app.appliedAt)}</TableCell>
                     <TableCell className="hidden md:table-cell"><Badge>{app.status}</Badge></TableCell>
                     <TableCell className="text-right">
-                       <Button variant="outline" size="sm" disabled>
-                          <Download className="mr-2 h-4 w-4"/>
-                          Baixar
+                       <Button asChild variant="outline" size="sm">
+                          <a href={app.resumeUrl} target="_blank" rel="noopener noreferrer">
+                             <Download className="mr-2 h-4 w-4"/>
+                             Baixar
+                          </a>
                        </Button>
                     </TableCell>
                   </TableRow>

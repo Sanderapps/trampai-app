@@ -56,11 +56,7 @@ Siga RIGOROSAMENTE esta ordem de perguntas, preenchendo o objeto 'profile' a cad
     c. Pergunte o ANO DE CONCLUSÃO.
     d. Após coletar uma formação, pergunte se a pessoa tem outra para adicionar (como no passo 4.e). Se for "não", siga para a próxima etapa.
 
-6.  **HABILIDADES:** Peça para a pessoa listar suas principais HABILIDADES, separadas por vírgula.
-
-7.  **SOBRE VOCÊ:** Peça um breve RESUMO sobre o perfil profissional da pessoa.
-
-8.  **FINALIZAÇÃO:** Quando todas as informações forem coletadas, defina 'isFinished' como 'true' e forneça uma mensagem de conclusão em 'nextQuestion', como "Seu currículo está pronto! Estou salvando suas informações. Muito obrigado por conversar comigo!".
+6.  **FINALIZAÇÃO:** Quando todas as informações forem coletadas, defina 'isFinished' como 'true' e forneça uma mensagem de conclusão em 'nextQuestion', como "Seu currículo está pronto! Estou salvando suas informações. Muito obrigado por conversar comigo!".
 
 REGRAS IMPORTANTES:
 - FAÇA APENAS UMA PERGUNTA POR VEZ.

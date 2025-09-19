@@ -66,11 +66,9 @@ export type UserProfile = {
   location?: string;
   linkedinUrl?: string;
   experience?: string; // Will store the JSON string of experiences
-  skills?: string;
   education?: string; // Will store the JSON string of education
   resumeText?: string;
   photoURL?: string;
-  summary?: string;
   birthDate?: string;
 }
 
@@ -106,8 +104,6 @@ export const ProfileDataSchema = z.object({
   phone: z.string().optional().describe("The candidate's phone number."),
   experiences: z.array(ExperienceSchema).optional().describe("A list of the candidate's work experiences."),
   education: z.array(EducationSchema).optional().describe("A list of the candidate's educational background."),
-  skills: z.array(z.string()).optional().describe("A list of the candidate's skills, separated by commas."),
-  summary: z.string().optional().describe("A brief summary about the candidate."),
 });
 export type ProfileData = z.infer<typeof ProfileDataSchema>;
 

@@ -47,8 +47,6 @@ const profileSchema = z.object({
   birthDate: z.date().optional(),
   phone: z.string().optional(),
   location: z.string().optional(),
-  summary: z.string().optional(),
-  skills: z.string().optional(),
   experiences: z.array(experienceSchema).optional(),
   education: z.array(educationSchema).optional(),
 });
@@ -116,17 +114,11 @@ export default function CandidateProfilePage() {
       const parsedExperiences = safeJsonParse(userProfile.experience, []);
       const parsedEducation = safeJsonParse(userProfile.education, []);
 
-      // If experience is a string, it means it's an old format.
-      // We'll move it to the summary if the summary is empty.
-      const summaryFromOldExperience = typeof userProfile.experience === 'string' && parsedExperiences.length === 0 ? userProfile.experience : '';
-
       profileForm.reset({
         name: userProfile.displayName || '',
         birthDate: userProfile.birthDate ? new Date(userProfile.birthDate) : undefined,
         phone: userProfile.phone || '',
         location: userProfile.location || '',
-        summary: userProfile.summary || summaryFromOldExperience,
-        skills: userProfile.skills || '',
         experiences: parsedExperiences,
         education: parsedEducation,
       });
@@ -179,8 +171,6 @@ export default function CandidateProfilePage() {
               name: result.profile.name || '',
               phone: result.profile.phone || '',
               location: result.profile.location || '',
-              summary: result.profile.summary || '',
-              skills: result.profile.skills?.join(', ') || '',
               experiences: result.profile.experiences || [],
               education: result.profile.education || [],
             }
@@ -221,8 +211,6 @@ export default function CandidateProfilePage() {
             birthDate: profileData.birthDate?.toISOString(),
             phone: profileData.phone,
             location: profileData.location,
-            summary: profileData.summary,
-            skills: profileData.skills,
             experience: JSON.stringify(profileData.experiences || []),
             education: JSON.stringify(profileData.education || []),
         }, { merge: true });
@@ -315,15 +303,6 @@ export default function CandidateProfilePage() {
                      <div className="space-y-2">
                         <Label htmlFor="location">Cidade e Estado</Label>
                         <Input id="location" placeholder="Ex: Porto Alegre, RS" {...profileForm.register("location")} />
-                    </div>
-                    <div className="sm:col-span-2 space-y-2">
-                        <Label htmlFor="summary">Sobre Mim</Label>
-                        <Textarea id="summary" placeholder="Um breve resumo sobre seu perfil profissional..." {...profileForm.register("summary")} />
-                    </div>
-                     <div className="sm:col-span-2 space-y-2">
-                        <Label htmlFor="skills">Habilidades</Label>
-                        <Input id="skills" placeholder="Ex: Comunicação, Proatividade, Cozinha" {...profileForm.register("skills")} />
-                        <p className="text-sm text-muted-foreground">Separe as habilidades por vírgula.</p>
                     </div>
                 </CardContent>
             </Card>

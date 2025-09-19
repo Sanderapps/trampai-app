@@ -10,7 +10,8 @@ export type Company = {
 export type Job = {
   id: string;
   title: string;
-  company: Company;
+  companyId: string;
+  companyName: string;
   location: string;
   type: 'CLT' | 'PJ' | 'Extra/Freelancer' | 'Estágio';
   salary?: {
@@ -19,7 +20,7 @@ export type Job = {
   };
   dailyRate?: number;
   description: string;
-  postedAt: Date | Timestamp;
+  postedAt: Date | Timestamp | { seconds: number, nanoseconds: number };
   contact?: {
     email: string;
     whatsapp: string;

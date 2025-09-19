@@ -33,12 +33,15 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Timestamp } from 'firebase/firestore';
+import { companies } from '@/lib/data';
 
 interface JobCardProps {
   job: Job;
 }
 
 export function JobCard({ job }: JobCardProps) {
+  const company = companies.find(c => c.id === job.companyId);
+
   const formatSalary = (job: Job) => {
     if (job.type === 'Extra/Freelancer') {
         return job.dailyRate ? `R$ ${job.dailyRate.toLocaleString('pt-BR')} / dia` : 'A combinar';
@@ -54,15 +57,24 @@ export function JobCard({ job }: JobCardProps) {
     if (job.postedAt instanceof Timestamp) {
       return job.postedAt.toDate();
     }
-    return job.postedAt;
+    // Firestore Timestamps can sometimes be hydrated as objects with seconds and nanoseconds
+    if (job.postedAt && 'seconds' in job.postedAt) {
+      return new Timestamp(job.postedAt.seconds, job.postedAt.nanoseconds).toDate();
+    }
+    return new Date(); // Fallback
+  }
+
+  if (!company) {
+    // Or render a skeleton/fallback
+    return null;
   }
 
   return (
     <Card className="flex h-full flex-col overflow-hidden transition-shadow hover:shadow-lg">
       <CardHeader className="flex flex-row items-start gap-4">
         <Avatar className="h-14 w-14 border">
-          <AvatarImage src={job.company.logo} alt={job.company.name} data-ai-hint={job.company.logoHint} />
-          <AvatarFallback>{job.company.name.charAt(0)}</AvatarFallback>
+          <AvatarImage src={company.logo} alt={company.name} data-ai-hint={company.logoHint} />
+          <AvatarFallback>{company.name.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="flex-grow">
           <CardTitle className="text-lg font-bold">
@@ -71,7 +83,7 @@ export function JobCard({ job }: JobCardProps) {
             </Link>
           </CardTitle>
           <CardDescription className="text-sm">
-            {job.company.name}
+            {job.companyName}
           </CardDescription>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge variant="secondary">{job.type}</Badge>

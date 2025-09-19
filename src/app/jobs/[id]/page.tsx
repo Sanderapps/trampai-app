@@ -29,6 +29,7 @@ import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { companies } from '@/lib/data';
 
 export default function JobDetailsPage({ params }: { params: { id: string } }) {
   const [job, setJob] = useState<Job | null>(null);
@@ -55,6 +56,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
     fetchJob();
   }, [params.id]);
 
+  const company = job ? companies.find(c => c.id === job.companyId) : null;
 
   if (loading) {
     return (
@@ -77,7 +79,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
     )
   }
 
-  if (!job) {
+  if (!job || !company) {
     return notFound();
   }
 
@@ -96,7 +98,11 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
     if (job.postedAt instanceof Timestamp) {
       return job.postedAt.toDate();
     }
-    return job.postedAt;
+    // Firestore Timestamps can sometimes be hydrated as objects with seconds and nanoseconds
+    if (job.postedAt && 'seconds' in job.postedAt) {
+      return new Timestamp(job.postedAt.seconds, job.postedAt.nanoseconds).toDate();
+    }
+    return new Date(); // Fallback
   }
 
   return (
@@ -119,7 +125,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
                                 <div>
                                     <CardTitle className="text-2xl font-bold">{job.title}</CardTitle>
                                     <CardDescription className="mt-2 flex items-center gap-2 text-sm">
-                                        <Building className="h-4 w-4" /> {job.company.name}
+                                        <Building className="h-4 w-4" /> {job.companyName}
                                     </CardDescription>
                                 </div>
                                 <div className="flex gap-2">
@@ -178,9 +184,9 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
 
                      <Card>
                         <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-                            <Image src={job.company.logo} alt={job.company.name} width={56} height={56} className="rounded-md border" />
+                            <Image src={company.logo} alt={company.name} width={56} height={56} className="rounded-md border" />
                             <div>
-                                <CardTitle className="text-base font-bold">{job.company.name}</CardTitle>
+                                <CardTitle className="text-base font-bold">{company.name}</CardTitle>
                                 <CardDescription className="text-sm">Veja o perfil da empresa</CardDescription>
                             </div>
                         </CardHeader>

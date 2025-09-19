@@ -18,5 +18,5 @@ export const companies: Company[] = [
   { id: '6', name: 'Varejo Tri', logo: getCompanyLogo(6).url, logoHint: getCompanyLogo(6).hint },
 ];
 
-// This file is now mostly for mock company data.
+// This file is now for mock company data.
 // Job data is fetched from Firestore.

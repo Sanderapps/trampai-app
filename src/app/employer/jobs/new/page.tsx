@@ -82,7 +82,7 @@ export default function NewJobPage() {
     }
 
     try {
-        const company = companies.find(c => c.id === '1'); // Mock company data for now
+        const company = companies.find(c => c.id === '1'); // Mock: In a real app, get the employer's company
         
         const jobData = {
             title: data.jobTitle,
@@ -91,7 +91,8 @@ export default function NewJobPage() {
             type: data.type,
             keywords: data.keywords.split(',').map(k => k.trim()),
             postedAt: serverTimestamp(),
-            company: company, // Replace with actual employer company data
+            companyId: company?.id,
+            companyName: company?.name,
             employerId: user.uid,
             salary: (data.salaryMin && data.salaryMax) ? { min: data.salaryMin, max: data.salaryMax } : null,
             dailyRate: data.dailyRate || null,

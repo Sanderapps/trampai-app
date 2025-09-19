@@ -9,26 +9,8 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { ConversationMessageSchema, ProfileData, ProfileDataSchema } from '@/lib/types';
 import { z } from 'genkit';
-
-// Defines a single message in the conversation history
-export const ConversationMessageSchema = z.object({
-  role: z.enum(['user', 'model']),
-  content: z.string(),
-});
-export type ConversationMessage = z.infer<typeof ConversationMessageSchema>;
-
-// Defines the data structure for the user's profile being built
-const ProfileDataSchema = z.object({
-  name: z.string().optional().describe("The candidate's full name."),
-  address: z.string().optional().describe("The candidate's city and state (e.g., 'Porto Alegre, RS')."),
-  phone: z.string().optional().describe("The candidate's phone number."),
-  experiences: z.array(z.string()).optional().describe("A list of the candidate's work experiences."),
-  education: z.array(z.string()).optional().describe("A list of the candidate's educational background."),
-  skills: z.array(z.string()).optional().describe("A list of the candidate's skills."),
-  summary: z.string().optional().describe("A brief summary about the candidate."),
-});
-export type ProfileData = z.infer<typeof ProfileDataSchema>;
 
 
 // Defines the input for the main flow, which is the conversation history

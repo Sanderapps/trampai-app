@@ -17,8 +17,9 @@ import { updateProfile } from "firebase/auth";
 import { auth, db } from "@/lib/firebase/client";
 import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { conversationalResume, ConversationMessage } from "@/ai/flows/conversational-resume";
+import { conversationalResume } from "@/ai/flows/conversational-resume";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ConversationMessage } from "@/lib/types";
 
 const chatSchema = z.object({
   message: z.string().min(1, "A mensagem não pode estar vazia."),
@@ -88,9 +89,9 @@ export default function CandidateProfilePage() {
                     displayName: result.profile.name,
                     phone: result.profile.phone,
                     location: result.profile.address,
-                    experience: result.profile.experiences.join('\n\n'),
-                    education: result.profile.education.join('\n'),
-                    skills: result.profile.skills.join(', '),
+                    experience: result.profile.experiences?.join('\n\n'),
+                    education: result.profile.education?.join('\n'),
+                    skills: result.profile.skills?.join(', '),
                 }, { merge: true });
                 reloadUserData();
             }

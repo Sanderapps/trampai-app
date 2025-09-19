@@ -18,7 +18,6 @@ import { Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
-import { companies } from '@/lib/data';
 import Link from 'next/link';
 import { Checkbox } from '@/components/ui/checkbox';
 
@@ -140,10 +139,6 @@ export default function NewJobPage() {
     }
 
     try {
-        // In a real app, the employer would be linked to a company profile.
-        // For now, we mock finding a company for the logged-in user.
-        const company = companies[0]; 
-        
         const jobData = {
             title: data.jobTitle,
             description: data.jobDescription,
@@ -152,8 +147,8 @@ export default function NewJobPage() {
             status: 'Aberta', // New field
             keywords: data.keywords.split(',').map(k => k.trim()),
             postedAt: serverTimestamp(),
-            companyId: company?.id,
-            companyName: company?.name,
+            companyId: user.uid, // Use user's UID as the company ID
+            companyName: user.displayName, // Use user's name as the company name
             employerId: user.uid,
             salary: salaryData,
             dailyRate: data.dailyRate || null,
@@ -354,5 +349,3 @@ export default function NewJobPage() {
     </div>
   );
 }
-
-    

@@ -24,10 +24,8 @@ export default function JobsPage() {
       setLoading(true);
       try {
         const jobsCollection = collection(db, 'jobs');
-        // We fetch all open jobs and sort on the client side
         const q = query(
           jobsCollection,
-          where('status', '!=', 'Fechada'), // Firestore doesn't have a native '!=' but we can filter client-side
           orderBy('postedAt', 'desc')
         );
         const jobSnapshot = await getDocs(q);

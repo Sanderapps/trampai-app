@@ -6,10 +6,10 @@ import { notFound, useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { collection, doc, getDoc, getDocs, query, where, Timestamp, updateDoc, writeBatch } from 'firebase/firestore';
-import { ArrowLeft, Download, Eye, User, Phone, Mail, FileText, Briefcase, Sparkles, MapPin, Share2, Star } from 'lucide-react';
+import { ArrowLeft, Download, Eye, User, Phone, Mail, FileText, Briefcase, Sparkles, MapPin, Share2, Star, Bot } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { db } from '@/lib/firebase/client';
-import { Job, Application, UserProfile } from '@/lib/types';
+import { Job, Application, UserProfile, RankedCandidate } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,6 +27,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
 import { useToast } from '@/hooks/use-toast';
+import { rankCandidates } from '@/ai/flows/rank-candidates';
 
 function formatSocialUrl(url: string) {
     if (!url) return '';
@@ -58,6 +59,10 @@ export default function ApplicantsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalLoading, setIsModalLoading] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  
+  const [isRanking, setIsRanking] = useState(false);
+  const [rankedCandidates, setRankedCandidates] = useState<RankedCandidate[]>([]);
+
 
   const fetchJobAndApplicants = async (userId: string) => {
       setLoading(true);
@@ -166,6 +171,63 @@ export default function ApplicantsPage() {
       setIsModalLoading(false);
     }
   };
+  
+  const handleRankCandidates = async () => {
+    if (!job || applications.length === 0) {
+      toast({ variant: 'destructive', title: "Não há candidatos para analisar."});
+      return;
+    }
+
+    setIsRanking(true);
+    setRankedCandidates([]);
+    try {
+      
+      const candidateProfilesPromises = applications.map(async (app) => {
+        const userDoc = await getDoc(doc(db, 'users', app.candidateId));
+        if (!userDoc.exists()) return null;
+        const userProfile = userDoc.data() as UserProfile;
+
+        // Helper to safely parse JSON strings from Firestore
+        const safeJsonParse = (jsonString: string | undefined | null) => {
+          if (!jsonString) return [];
+          try {
+              if (typeof jsonString === 'object' && jsonString !== null) return jsonString;
+              const parsed = JSON.parse(jsonString);
+              return Array.isArray(parsed) ? parsed : [];
+          } catch (e) { return []; }
+        };
+
+        return {
+          id: app.candidateId,
+          name: app.candidateName,
+          summary: userProfile.summary || '',
+          experience: safeJsonParse(userProfile.experience).map((exp: any) => `${exp.role} at ${exp.company}`).join(', '),
+          education: safeJsonParse(userProfile.education).map((edu: any) => edu.course).join(', '),
+        }
+      });
+
+      const candidateProfiles = (await Promise.all(candidateProfilesPromises)).filter(p => p !== null);
+
+      if(candidateProfiles.length === 0) {
+         toast({ variant: 'destructive', title: "Perfis de candidatos não encontrados."});
+         return;
+      }
+
+      const result = await rankCandidates({
+        jobDescription: job.description,
+        candidateProfiles: candidateProfiles as any,
+      });
+
+      setRankedCandidates(result.rankedCandidates);
+      toast({ title: "Análise concluída!", description: "Os candidatos foram ranqueados pela IA."});
+
+    } catch (error) {
+      console.error("Error ranking candidates:", error);
+      toast({ variant: "destructive", title: "Erro na Análise", description: "Não foi possível analisar os candidatos." });
+    } finally {
+      setIsRanking(false);
+    }
+  }
 
   const getAppliedDate = (timestamp: Application['appliedAt']) => {
       if (!timestamp) return 'Data indisponível';
@@ -219,7 +281,7 @@ export default function ApplicantsPage() {
           </Link>
         </Button>
       </div>
-      <Card>
+       <Card className='mb-8'>
         <CardHeader>
           <div className='flex items-center justify-between'>
             <div className='flex-1'>
@@ -230,6 +292,49 @@ export default function ApplicantsPage() {
             </div>
              {isJobClosed && <Badge variant="destructive">Vaga Fechada</Badge>}
           </div>
+        </CardHeader>
+      </Card>
+      
+      <Card className='mb-8'>
+        <CardHeader>
+          <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'>
+            <div className='flex-1'>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <Bot className='h-6 w-6 text-primary' />
+                Análise com IA
+              </CardTitle>
+              <CardDescription className='mt-1'>
+                Use nossa IA para analisar e ranquear os candidatos com base na descrição da vaga.
+              </CardDescription>
+            </div>
+            <Button onClick={handleRankCandidates} disabled={isRanking || applications.length === 0}>
+                {isRanking ? "Analisando..." : "Analisar Candidatos"}
+            </Button>
+          </div>
+        </CardHeader>
+        {(isRanking || rankedCandidates.length > 0) && (
+            <CardContent>
+                {isRanking && <p className='text-muted-foreground'>Aguarde, a IA está analisando os perfis...</p>}
+                {rankedCandidates.length > 0 && (
+                    <div className='space-y-4'>
+                        {rankedCandidates.map(c => (
+                            <div key={c.id} className='p-4 border rounded-lg'>
+                               <div className='flex items-center justify-between'>
+                                 <h3 className='font-bold text-lg'>{c.name}</h3>
+                                 <Badge>Nota: {c.score}/10</Badge>
+                               </div>
+                                <p className='text-sm text-muted-foreground mt-2'>{c.justification}</p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </CardContent>
+        )}
+      </Card>
+
+      <Card>
+        <CardHeader>
+           <CardTitle className="text-xl">Lista de Candidatos</CardTitle>
         </CardHeader>
         <CardContent>
           {applications.length > 0 ? (
@@ -344,13 +449,11 @@ export default function ApplicantsPage() {
 
                         <Separator />
 
-                        {selectedCandidate.skills && (
+                        {selectedCandidate.summary && (
                             <div>
-                                <h3 className="text-lg font-semibold flex items-center gap-2 mb-2"><Sparkles className='h-5 w-5 text-primary'/> Habilidades</h3>
-                                <div className="flex flex-wrap gap-2">
-                                    {selectedCandidate.skills.split(',').map(skill => skill.trim()).filter(Boolean).map(skill => (
-                                        <Badge key={skill} variant="secondary">{skill}</Badge>
-                                    ))}
+                                <h3 className="text-lg font-semibold flex items-center gap-2 mb-2"><User className='h-5 w-5 text-primary'/> Sobre Mim</h3>
+                                <div className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground">
+                                    {selectedCandidate.summary}
                                 </div>
                             </div>
                         )}

@@ -10,7 +10,7 @@ export type Job = {
   title: string;
   company: Company;
   location: string;
-  type: 'CLT' | 'PJ' | 'Freelancer' | 'Estágio';
+  type: 'CLT' | 'PJ' | 'Extra/Freelancer' | 'Estágio';
   level: 'Júnior' | 'Pleno' | 'Sênior' | 'Especialista';
   salary?: {
     min: number;

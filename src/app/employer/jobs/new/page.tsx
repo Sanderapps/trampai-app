@@ -129,7 +129,7 @@ export default function NewJobPage() {
                     <SelectItem value="CLT">CLT</SelectItem>
                     <SelectItem value="PJ">PJ</SelectItem>
                     <SelectItem value="Estágio">Estágio</SelectItem>
-                    <SelectItem value="Freelancer">Freelancer</SelectItem>
+                    <SelectItem value="Extra/Freelancer">Extra/Freelancer</SelectItem>
                   </SelectContent>
                 </Select>
                  {errors.type && <p className="text-sm text-destructive">{errors.type.message}</p>}

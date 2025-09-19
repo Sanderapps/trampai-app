@@ -59,7 +59,7 @@ export const jobs: Job[] = [
     title: 'Analista de UX/UI',
     company: companies[2],
     location: 'Remoto',
-    type: 'Freelancer',
+    type: 'Extra/Freelancer',
     level: 'Pleno',
     description: 'Vaga para analista de UX/UI para projeto de 3 meses, com possibilidade de efetivação.',
     postedAt: new Date('2024-07-18'),

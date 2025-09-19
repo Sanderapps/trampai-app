@@ -54,10 +54,10 @@ O processo deve seguir a seguinte ordem de perguntas:
 REGRAS IMPORTANTES:
 - FAÇA APENAS UMA PERGUNTA POR VEZ.
 - Analise o histórico da conversa para entender em que parte do processo você está e quais informações já foram coletadas. O histórico é: {{jsonStringify history}}
+- Se o histórico estiver vazio, sua primeira resposta em 'nextQuestion' DEVE SER para dar as boas-vindas e pedir o nome completo.
 - Preencha o campo 'profile' com os dados que você já coletou.
 - Se o usuário disser "parar" ou "cancelar", encerre a conversa educadamente.
 - Quando todas as informações forem coletadas, defina 'isFinished' como 'true' e forneça uma mensagem de conclusão em 'nextQuestion'.
-- Se o histórico estiver vazio, sua primeira resposta em 'nextQuestion' DEVE SER para dar as boas-vindas e pedir o nome completo.
 `,
 });
 

@@ -10,6 +10,7 @@ import {
   Briefcase,
   Clock,
   BadgeDollarSign,
+  Eye,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -138,9 +139,9 @@ export function JobCard({ job }: JobCardProps) {
       </CardContent>
       <CardFooter className="flex flex-col items-stretch gap-2 sm:flex-row">
         <Button asChild className="w-full">
-          <Link href={`/jobs/${job.id}/apply`}>
-            <Briefcase className="mr-2 h-4 w-4" />
-            Candidatar-se
+          <Link href={`/jobs/${job.id}`}>
+            <Eye className="mr-2 h-4 w-4" />
+            Ver Vaga
           </Link>
         </Button>
         {job.contact && (

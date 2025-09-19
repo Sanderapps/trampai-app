@@ -18,13 +18,14 @@ import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { conversationalResume } from "@/ai/flows/conversational-resume";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ConversationMessage, ProfileData } from "@/lib/types";
+import { ConversationMessage } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
 
 
 // Schema for the manual form
@@ -48,6 +49,7 @@ const profileSchema = z.object({
   location: z.string().optional(),
   experiences: z.array(experienceSchema).optional(),
   education: z.array(educationSchema).optional(),
+  summary: z.string().optional(),
 });
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
@@ -96,12 +98,10 @@ export default function CandidateProfilePage() {
   const safeJsonParse = (jsonString: string | undefined, fallback: any = []) => {
     if (!jsonString) return fallback;
     try {
-        // First, check if it's already an object (which it shouldn't be but good practice)
         if (typeof jsonString === 'object') return jsonString;
         return JSON.parse(jsonString);
     } catch (e) {
         console.warn("Failed to parse JSON, falling back.", e);
-        // If parsing fails, just return the fallback. The profile form will handle it.
         return fallback;
     }
   };
@@ -119,6 +119,7 @@ export default function CandidateProfilePage() {
         location: userProfile.location || '',
         experiences: parsedExperiences,
         education: parsedEducation,
+        summary: userProfile.summary || '',
       });
     }
   }, [userProfile, profileForm]);
@@ -171,6 +172,7 @@ export default function CandidateProfilePage() {
               location: result.profile.location || '',
               experiences: result.profile.experiences || [],
               education: result.profile.education || [],
+              summary: result.profile.summary || '',
             }
             await saveProfile(profileToSave);
             profileForm.reset(profileToSave); // Update the form with AI data
@@ -211,6 +213,7 @@ export default function CandidateProfilePage() {
             location: profileData.location,
             experience: JSON.stringify(profileData.experiences || []),
             education: JSON.stringify(profileData.education || []),
+            summary: profileData.summary || '',
         }, { merge: true });
 
         await reloadUserData();
@@ -444,6 +447,20 @@ export default function CandidateProfilePage() {
               </CardContent>
             </Card>
 
+             <Card>
+                <CardHeader>
+                    <CardTitle>Sobre mim (Opcional)</CardTitle>
+                    <CardDescription>Faça um breve resumo sobre você, suas paixões e objetivos.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Textarea 
+                        rows={5}
+                        placeholder="Escreva um pouco sobre você..."
+                        {...profileForm.register("summary")}
+                    />
+                </CardContent>
+            </Card>
+
             <div className="flex justify-end">
                 <Button type="submit" disabled={profileForm.formState.isSubmitting}>
                     <Save className="mr-2 h-4 w-4" />
@@ -454,9 +471,3 @@ export default function CandidateProfilePage() {
     </div>
   );
 }
-
-      
-
-    
-
-    

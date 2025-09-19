@@ -39,17 +39,17 @@ const prompt = ai.definePrompt({
   name: 'resumeAutoFillPrompt',
   input: {schema: z.object({ resumeText: z.string() })},
   output: {schema: ResumeAutoFillOutputSchema},
-  prompt: `You are an AI assistant designed to extract information from resumes.
+  prompt: `Você é um assistente de IA projetado para extrair informações de currículos em português.
 
-  Please extract the following information from the resume text provided:
-  - Name
-  - Email Address
-  - Phone Number
-  - Work Experience (as a list of strings)
-  - Skills (as a list of strings)
-  - Education History (as a list of strings)
+  Por favor, extraia as seguintes informações do texto do currículo fornecido:
+  - Nome
+  - Endereço de e-mail
+  - Número de telefone
+  - Experiência de trabalho (como uma lista de strings)
+  - Habilidades (como uma lista de strings)
+  - Histórico educacional (como uma lista de strings)
 
-  Here is the resume text:
+  Aqui está o texto do currículo:
   {{{resumeText}}}`,
 });
 
@@ -62,11 +62,11 @@ const resumeAutoFillFlow = ai.defineFlow(
   async (input) => {
     // PDF processing is temporarily disabled to resolve a build issue.
     // In a real implementation, you would extract text from the PDF here.
-    const resumeText = "Resume processing is currently disabled.";
+    const resumeText = "O processamento de currículo está desativado no momento.";
     
     const {output} = await prompt({resumeText});
     if (!output) {
-      throw new Error("Unable to process resume");
+      throw new Error("Não foi possível processar o currículo");
     }
     return output;
   }

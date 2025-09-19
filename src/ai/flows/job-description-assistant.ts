@@ -1,4 +1,3 @@
-// use server'
 'use server';
 /**
  * @fileOverview An AI assistant to help employers write compelling and inclusive job descriptions.
@@ -36,14 +35,23 @@ const prompt = ai.definePrompt({
   name: 'jobDescriptionAssistantPrompt',
   input: {schema: JobDescriptionAssistantInputSchema},
   output: {schema: JobDescriptionAssistantOutputSchema},
-  prompt: `You are an AI assistant helping employers write job descriptions.
+  prompt: `Você é um assistente de IA especialista em criar descrições de vagas para o mercado brasileiro.
 
-  Based on the job title and keywords provided, generate a compelling and inclusive job description.
+Sua tarefa é gerar uma descrição de vaga em português do Brasil que seja clara, atraente, inclusiva e bem estruturada.
 
-  Job Title: {{{jobTitle}}}
-  Keywords: {{{keywords}}}
+Use o título da vaga e as palavras-chave fornecidas como base.
 
-  Job Description:`, // Removed the extra newline here
+**Título da Vaga:** {{{jobTitle}}}
+**Palavras-chave:** {{{keywords}}}
+
+**Instruções:**
+1.  **Idioma:** A descrição DEVE ser em português do Brasil.
+2.  **Estrutura:** Organize a descrição em seções claras, como "Descrição da Vaga", "Responsabilidades", "Qualificações" e "Diferenciais". Use markdown para formatação (negrito e listas).
+3.  **Tom:** Use um tom profissional, mas acessível e convidativo. Evite jargões excessivos.
+4.  **Inclusão:** Utilize uma linguagem neutra e inclusiva, evitando termos que possam discriminar gênero, idade ou outras características.
+5.  **Conteúdo:** Elabore o conteúdo com base nas palavras-chave, detalhando as principais atividades e os requisitos técnicos e comportamentais esperados para a função.
+
+**Descrição da Vaga Gerada:**`,
 });
 
 const jobDescriptionAssistantFlow = ai.defineFlow(

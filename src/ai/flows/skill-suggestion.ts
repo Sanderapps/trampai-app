@@ -35,13 +35,13 @@ const prompt = ai.definePrompt({
   name: 'skillSuggestionPrompt',
   input: {schema: SkillSuggestionInputSchema},
   output: {schema: SkillSuggestionOutputSchema},
-  prompt: `You are an AI assistant specialized in suggesting relevant skills based on a candidate's work experience.
+  prompt: `Você é um assistente de IA especializado em sugerir habilidades relevantes com base na experiência de trabalho de um candidato.
 
-  Given the following work experience, suggest a list of skills that the candidate should add to their profile to improve their chances of being matched with relevant job opportunities.
+  Dada a seguinte experiência de trabalho, sugira uma lista de habilidades em português que o candidato deve adicionar ao seu perfil para melhorar suas chances de ser combinado com oportunidades de emprego relevantes.
 
-  Experience: {{{experience}}}
+  Experiência: {{{experience}}}
 
-  Skills:`,
+  Habilidades:`,
 });
 
 const skillSuggestionFlow = ai.defineFlow(

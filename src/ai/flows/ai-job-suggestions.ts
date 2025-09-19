@@ -47,22 +47,21 @@ const suggestJobsPrompt = ai.definePrompt({
   name: 'suggestJobsPrompt',
   input: {schema: SuggestJobsInputSchema},
   output: {schema: SuggestJobsOutputSchema},
-  prompt: `You are an AI job matching expert.
+  prompt: `Você é um especialista em recrutamento e seleção.
 
-Given the following candidate profile:
+Analise o perfil do candidato abaixo:
 
 {{candidateProfile}}
 
-And the following job descriptions:
+E as seguintes descrições de vagas:
 
 {{#each jobDescriptions}}
-{{this}}
+- {{this}}
 {{/each}}
 
-Determine which jobs are the best matches for the candidate based on skills, experience, and keywords.
+Determine quais vagas são as melhores correspondências para o candidato, com base em suas habilidades, experiência e palavras-chave.
 
-Return an array of the job descriptions that are the best matches.
-Ensure that the array only contains job descriptions that are highly relevant to the candidate's profile.
+Retorne um array contendo apenas as descrições de vagas que são altamente relevantes para o perfil do candidato. A resposta deve ser em português do Brasil.
 `,
 });
 

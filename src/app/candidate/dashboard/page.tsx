@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { getPostedAt } from "@/lib/job-utils";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Megaphone } from "lucide-react";
 
 export default function CandidateDashboard() {
   const { user, userProfile, loading } = useAuth();
@@ -110,6 +112,19 @@ export default function CandidateDashboard() {
     <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       <h1 className="font-headline text-3xl font-bold">Minhas Candidaturas</h1>
       <p className="mt-1 text-muted-foreground">Acompanhe o status das suas candidaturas, {user.displayName}.</p>
+      
+      {isProfileIncomplete && (
+        <Alert className="mt-8">
+          <Megaphone className="h-4 w-4" />
+          <AlertTitle>Seu perfil está quase lá!</AlertTitle>
+          <AlertDescription className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+             <p>Um perfil completo atrai mais recrutadores. Mantenha seu currículo atualizado e aumente suas chances!</p>
+             <Button asChild className="w-full md:w-auto">
+                <Link href="/candidate/profile">Completar Perfil Agora</Link>
+             </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="mt-8 space-y-6">
         {appsLoading ? (

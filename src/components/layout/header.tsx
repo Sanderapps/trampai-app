@@ -41,7 +41,6 @@ export function Header() {
 
   const getProfileLink = () => {
     if (userProfile?.accountType === 'employer') {
-        // Employer profile page doesn't exist yet, so we default to dashboard
         return '/employer/dashboard';
     }
     return '/candidate/profile';

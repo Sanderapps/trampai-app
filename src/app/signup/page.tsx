@@ -66,7 +66,7 @@ export default function SignupPage() {
             });
 
             if (data.accountType === 'candidate') {
-                router.push('/candidate/dashboard');
+                router.push('/jobs');
             } else {
                 router.push('/employer/dashboard');
             }

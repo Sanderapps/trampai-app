@@ -2,28 +2,53 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from "@/hooks/use-toast";
-import { Bot, Send, Sparkles } from "lucide-react";
+import { Bot, Save, Send, Sparkles } from "lucide-react";
 import { updateProfile } from "firebase/auth";
-import { auth, db } from "@/lib/firebase/client";
+import { db } from "@/lib/firebase/client";
 import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { conversationalResume } from "@/ai/flows/conversational-resume";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ConversationMessage, ProfileData } from "@/lib/types";
+import { ConversationMessage, ProfileData, Experience, Education } from "@/lib/types";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
+// Schema for the manual form
+const profileSchema = z.object({
+  name: z.string().min(2, 'Nome é obrigatório.'),
+  phone: z.string().optional(),
+  location: z.string().optional(),
+  summary: z.string().optional(),
+  skills: z.string().optional(),
+  experiences: z.array(z.object({
+      role: z.string(),
+      company: z.string(),
+      startDate: z.string(),
+      endDate: z.string(),
+  })).optional(),
+  education: z.array(z.object({
+      course: z.string(),
+      institution: z.string(),
+      endDate: z.string(),
+  })).optional(),
+});
+type ProfileFormValues = z.infer<typeof profileSchema>;
+
+// Schema for the chat form
 const chatSchema = z.object({
   message: z.string().min(1, "A mensagem não pode estar vazia."),
 });
 type ChatFormValues = z.infer<typeof chatSchema>;
+
 
 export default function CandidateProfilePage() {
   const { user, userProfile, loading, reloadUserData } = useAuth();
@@ -31,14 +56,36 @@ export default function CandidateProfilePage() {
   const { toast } = useToast();
   
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
-  const [isBuilding, setIsBuilding] = useState(false);
+  const [isBuildingWithAI, setIsBuildingWithAI] = useState(false);
   const [isAiResponding, setIsAiResponding] = useState(false);
   
   const conversationEndRef = useRef<HTMLDivElement>(null);
 
-  const { register, handleSubmit, reset, setFocus, formState: { errors } } = useForm<ChatFormValues>({
-    resolver: zodResolver(chatSchema)
+  // Form for manual editing
+  const profileForm = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileSchema),
   });
+
+  // Form for AI chat
+  const chatForm = useForm<ChatFormValues>({
+    resolver: zodResolver(chatSchema),
+  });
+
+  // Populate form with user data on load
+  useEffect(() => {
+    if (userProfile) {
+      profileForm.reset({
+        name: userProfile.displayName || '',
+        phone: userProfile.phone || '',
+        location: userProfile.location || '',
+        summary: userProfile.summary || '',
+        skills: userProfile.skills || '',
+        experiences: userProfile.experience ? JSON.parse(userProfile.experience) : [],
+        education: userProfile.education ? JSON.parse(userProfile.education) : [],
+      });
+    }
+  }, [userProfile, profileForm.reset]);
+
 
   useEffect(() => {
     conversationEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -50,8 +97,9 @@ export default function CandidateProfilePage() {
     }
   }, [user, userProfile, loading, router]);
 
+  // --- AI Conversation Logic ---
   const startConversation = async () => {
-    setIsBuilding(true);
+    setIsBuildingWithAI(true);
     setIsAiResponding(true);
     setConversation([]);
     try {
@@ -59,43 +107,10 @@ export default function CandidateProfilePage() {
       setConversation(prev => [...prev, { role: 'model', content: result.nextQuestion }]);
     } catch (error) {
       toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível iniciar o assistente de IA.' });
-      setIsBuilding(false);
+      setIsBuildingWithAI(false);
     } finally {
       setIsAiResponding(false);
-       setTimeout(() => setFocus('message'), 100);
-    }
-  };
-  
-  const saveProfile = async (profileData: ProfileData) => {
-    if (!user || !userProfile) {
-        toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.' });
-        return;
-    }
-    
-    try {
-        await updateProfile(user, { displayName: profileData.name });
-        const userDocRef = doc(db, 'users', user.uid);
-        
-        // Convert structured data to JSON strings for storage
-        const experienceString = profileData.experiences ? JSON.stringify(profileData.experiences) : '';
-        const educationString = profileData.education ? JSON.stringify(profileData.education) : '';
-        
-        await setDoc(userDocRef, {
-            ...userProfile,
-            displayName: profileData.name,
-            phone: profileData.phone,
-            location: profileData.location,
-            experience: experienceString,
-            education: educationString,
-            skills: profileData.skills?.join(', '),
-            summary: profileData.summary,
-        }, { merge: true });
-
-        await reloadUserData();
-        
-    } catch (error) {
-        console.error("Error saving profile:", error);
-        toast({ variant: 'destructive', title: 'Erro ao Salvar', description: 'Não foi possível salvar o seu perfil.' });
+       setTimeout(() => chatForm.setFocus('message'), 100);
     }
   };
 
@@ -103,7 +118,7 @@ export default function CandidateProfilePage() {
     const userMessage: ConversationMessage = { role: 'user', content: data.message };
     const newConversation = [...conversation, userMessage];
     setConversation(newConversation);
-    reset();
+    chatForm.reset();
     setIsAiResponding(true);
     
     try {
@@ -115,7 +130,7 @@ export default function CandidateProfilePage() {
             await saveProfile(result.profile);
 
             setConversation(prev => [...prev, { role: 'model', content: result.nextQuestion }]);
-            setIsBuilding(false); // End the building session
+            setIsBuildingWithAI(false);
 
         } else {
             setConversation(prev => [...prev, { role: 'model', content: result.nextQuestion }]);
@@ -127,10 +142,52 @@ export default function CandidateProfilePage() {
         setConversation(prev => [...prev, { role: 'model', content: `Desculpe, ocorreu um erro: ${errorMessage}. Vamos tentar de novo. Qual era a informação que estávamos discutindo?` }]);
     } finally {
         setIsAiResponding(false);
-        setTimeout(() => setFocus('message'), 100);
+        setTimeout(() => chatForm.setFocus('message'), 100);
+    }
+  };
+  
+  // --- Manual Save Logic ---
+  const saveProfile = async (profileData: ProfileData | ProfileFormValues) => {
+    if (!user || !userProfile) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.' });
+        return;
+    }
+    
+    try {
+        await updateProfile(user, { displayName: profileData.name });
+        const userDocRef = doc(db, 'users', user.uid);
+        
+        const experiences = 'experiences' in profileData ? profileData.experiences : [];
+        const education = 'education' in profileData ? profileData.education : [];
+        const skills = 'skills' in profileData ? (Array.isArray(profileData.skills) ? profileData.skills.join(', ') : profileData.skills) : '';
+
+
+        await setDoc(userDocRef, {
+            ...userProfile,
+            displayName: profileData.name,
+            phone: profileData.phone,
+            location: profileData.location,
+            summary: profileData.summary,
+            skills: skills,
+            experience: JSON.stringify(experiences),
+            education: JSON.stringify(education),
+        }, { merge: true });
+
+        await reloadUserData();
+        toast({ title: 'Perfil Salvo!', description: 'Suas informações foram atualizadas com sucesso.' });
+        
+    } catch (error) {
+        console.error("Error saving profile:", error);
+        toast({ variant: 'destructive', title: 'Erro ao Salvar', description: 'Não foi possível salvar o seu perfil.' });
     }
   };
 
+  const onManualSubmit: SubmitHandler<ProfileFormValues> = async (data) => {
+    await saveProfile(data);
+  };
+
+
+  // --- Render Logic ---
   if (loading) {
     return <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">Carregando...</div>;
   }
@@ -144,26 +201,71 @@ export default function CandidateProfilePage() {
   }
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
+    <div className="container mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
         <div>
             <h1 className="font-headline text-3xl font-bold">Meu Currículo</h1>
-            <p className="mt-1 text-muted-foreground">Use nosso assistente de IA para criar seu currículo de forma rápida e fácil, respondendo a algumas perguntas.</p>
+            <p className="mt-1 text-muted-foreground">Mantenha suas informações atualizadas para facilitar suas candidaturas.</p>
         </div>
         
-        <Card className="mt-8">
+        {/* Manual Profile Form */}
+        <form onSubmit={profileForm.handleSubmit(onManualSubmit)} className="mt-8 space-y-8">
+             <Card>
+                <CardHeader>
+                    <CardTitle>Informações Pessoais</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Nome Completo</Label>
+                        <Input id="name" {...profileForm.register("name")} />
+                        {profileForm.formState.errors.name && <p className="text-sm text-destructive">{profileForm.formState.errors.name.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="phone">Telefone</Label>
+                        <Input id="phone" {...profileForm.register("phone")} />
+                    </div>
+                     <div className="sm:col-span-2 space-y-2">
+                        <Label htmlFor="location">Cidade e Estado</Label>
+                        <Input id="location" placeholder="Ex: Porto Alegre, RS" {...profileForm.register("location")} />
+                    </div>
+                    <div className="sm:col-span-2 space-y-2">
+                        <Label htmlFor="summary">Sobre Mim</Label>
+                        <Textarea id="summary" placeholder="Um breve resumo sobre seu perfil profissional..." {...profileForm.register("summary")} />
+                    </div>
+                     <div className="sm:col-span-2 space-y-2">
+                        <Label htmlFor="skills">Habilidades</Label>
+                        <Input id="skills" placeholder="Ex: Comunicação, Proatividade, Cozinha" {...profileForm.register("skills")} />
+                        <p className="text-sm text-muted-foreground">Separe as habilidades por vírgula.</p>
+                    </div>
+                </CardContent>
+            </Card>
+
+             {/* TODO: Add Experience and Education manual fields */}
+
+            <div className="flex justify-end">
+                <Button type="submit" disabled={profileForm.formState.isSubmitting}>
+                    <Save className="mr-2 h-4 w-4" />
+                    {profileForm.formState.isSubmitting ? 'Salvando...' : 'Salvar Currículo'}
+                </Button>
+            </div>
+        </form>
+
+        {/* AI Assistant Card */}
+        <Card className="mt-12">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Bot className="text-primary"/>
-                    Assistente de Currículo
+                    Assistente de Currículo com IA
                 </CardTitle>
+                 <CardDescription>
+                    Não quer preencher manualmente? Deixe que nossa IA construa seu currículo através de uma conversa rápida.
+                </CardDescription>
             </CardHeader>
             <CardContent>
-                {!isBuilding ? (
-                    <div className="text-center p-8">
-                        <p className="mb-4">Pronto para criar ou atualizar seu currículo? A nossa IA vai te guiar com algumas perguntas.</p>
+                {!isBuildingWithAI ? (
+                    <div className="text-center p-4">
                         <Button onClick={startConversation}>
                             <Sparkles className="mr-2 h-4 w-4" />
-                            Começar a criar
+                            Começar a criar com IA
                         </Button>
                     </div>
                 ) : (
@@ -197,9 +299,9 @@ export default function CandidateProfilePage() {
                             )}
                             <div ref={conversationEndRef} />
                         </div>
-                        <form onSubmit={handleSubmit(onSendMessage)} className="mt-4 flex gap-2">
+                        <form onSubmit={chatForm.handleSubmit(onSendMessage)} className="mt-4 flex gap-2">
                             <Input 
-                                {...register("message")}
+                                {...chatForm.register("message")}
                                 placeholder="Digite sua resposta..."
                                 autoComplete="off"
                                 disabled={isAiResponding}
@@ -208,7 +310,7 @@ export default function CandidateProfilePage() {
                                 <Send className="h-4 w-4" />
                             </Button>
                         </form>
-                         {errors.message && <p className="text-sm text-destructive mt-1">{errors.message.message}</p>}
+                         {chatForm.formState.errors.message && <p className="text-sm text-destructive mt-1">{chatForm.formState.errors.message.message}</p>}
                     </div>
                 )}
             </CardContent>

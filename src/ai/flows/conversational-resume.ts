@@ -50,7 +50,6 @@ export async function conversationalResume(input: ConversationalResumeInput): Pr
   return conversationalResumeFlow(input);
 }
 
-
 const prompt = ai.definePrompt({
   name: 'conversationalResumePrompt',
   input: { schema: ConversationalResumeInputSchema },

@@ -24,12 +24,12 @@ import { Card, CardContent } from '@/components/ui/card';
 const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-bg');
 
 const categories = [
-  { name: 'Restaurantes', icon: UtensilsCrossed },
-  { name: 'Tecnologia', icon: Code },
-  { name: 'Saúde', icon: HeartPulse },
-  { name: 'Educação', icon: GraduationCap },
-  { name: 'Varejo', icon: Store },
-  { name: 'Serviços Gerais', icon: Wrench },
+  { name: 'Restaurantes', icon: UtensilsCrossed, slug: 'restaurantes' },
+  { name: 'Tecnologia', icon: Code, slug: 'tecnologia' },
+  { name: 'Saúde', icon: HeartPulse, slug: 'saude' },
+  { name: 'Educação', icon: GraduationCap, slug: 'educacao' },
+  { name: 'Varejo', icon: Store, slug: 'varejo' },
+  { name: 'Serviços Gerais', icon: Wrench, slug: 'servicos-gerais' },
 ];
 
 export default function Home() {
@@ -118,7 +118,7 @@ export default function Home() {
           </div>
           <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
             {categories.map((category) => (
-              <Link href="#" key={category.name}>
+              <Link href={`/jobs/category/${category.slug}`} key={category.name}>
                 <Card className="group h-full transform transition-transform hover:-translate-y-1 hover:shadow-xl">
                   <CardContent className="flex h-full flex-col items-center justify-center p-6 text-center">
                     <category.icon className="mb-4 h-10 w-10 text-primary" />

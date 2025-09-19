@@ -1,22 +1,44 @@
+
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
-import { useEffect, useState } from "react";
-import { Application } from "@/lib/types";
+import { useEffect, useState, useMemo } from "react";
+import { Application, UserProfile } from "@/lib/types";
 import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { getPostedAt } from "@/lib/job-utils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Rocket } from "lucide-react";
 
 export default function CandidateDashboard() {
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
   const [appliedJobs, setAppliedJobs] = useState<Application[]>([]);
   const [appsLoading, setAppsLoading] = useState(true);
+
+  const isProfileIncomplete = useMemo(() => {
+    if (!userProfile) return false;
+    
+    // Helper to safely parse JSON strings from Firestore
+    const safeJsonParse = (jsonString: string | undefined | null) => {
+        if (!jsonString) return [];
+        try {
+            if (typeof jsonString === 'object' && jsonString !== null) return jsonString;
+            const parsed = JSON.parse(jsonString);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) { return []; }
+    };
+
+    const hasExperience = safeJsonParse(userProfile.experience).length > 0;
+    const hasEducation = safeJsonParse(userProfile.education).length > 0;
+
+    return !userProfile.summary || (!hasExperience && !userProfile.isFirstJob) || !hasEducation || !userProfile.phone || !userProfile.location;
+  }, [userProfile]);
 
   useEffect(() => {
     const fetchAppliedJobs = async () => {
@@ -73,6 +95,21 @@ export default function CandidateDashboard() {
     <div className="container mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       <h1 className="font-headline text-3xl font-bold">Minhas Candidaturas</h1>
       <p className="mt-1 text-muted-foreground">Acompanhe o status das suas candidaturas, {user.displayName}.</p>
+
+       {isProfileIncomplete && (
+        <Alert className="mt-8">
+          <Rocket className="h-4 w-4" />
+          <AlertTitle className="font-bold">Seu perfil está quase lá!</AlertTitle>
+          <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+           <div>
+              Um perfil completo atrai mais recrutadores. Mantenha seu currículo atualizado e aumente suas chances!
+            </div>
+            <Button asChild className="shrink-0">
+                <Link href="/candidate/profile">Completar Perfil Agora</Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="mt-8 space-y-6">
         {appsLoading ? (

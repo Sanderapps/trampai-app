@@ -20,7 +20,6 @@ import { conversationalResume } from "@/ai/flows/conversational-resume";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ConversationMessage, ProfileData } from "@/lib/types";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -102,8 +101,7 @@ export default function CandidateProfilePage() {
         return JSON.parse(jsonString);
     } catch (e) {
         console.warn("Failed to parse JSON, falling back.", e);
-        // If parsing fails, and the string looks like it could be a description, return an empty array
-        // and let the logic below handle it.
+        // If parsing fails, just return the fallback. The profile form will handle it.
         return fallback;
     }
   };
@@ -123,7 +121,7 @@ export default function CandidateProfilePage() {
         education: parsedEducation,
       });
     }
-  }, [userProfile, profileForm.reset]);
+  }, [userProfile, profileForm]);
 
 
 
@@ -249,8 +247,79 @@ export default function CandidateProfilePage() {
             <p className="mt-1 text-muted-foreground">Mantenha suas informações atualizadas para facilitar suas candidaturas.</p>
         </div>
         
+         {/* AI Assistant Card */}
+        <Card className="mt-8">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Bot className="text-primary"/>
+                    Assistente de Perfil com IA
+                </CardTitle>
+                 <CardDescription>
+                    Não quer preencher manualmente? Deixe que nossa IA construa seu currículo através de uma conversa rápida.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {!isBuildingWithAI ? (
+                    <div className="text-center p-4">
+                        <Button onClick={startConversation}>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Começar a criar com IA
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="flex flex-col h-[60vh]">
+                        <div className="flex-grow space-y-4 overflow-y-auto pr-4">
+                            {conversation.map((msg, index) => (
+                                <div key={index} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                                    {msg.role === 'model' && <Avatar className="h-8 w-8"><AvatarFallback><Bot size={20}/></AvatarFallback></Avatar>}
+                                    <div className={`max-w-md rounded-lg p-3 ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                                    </div>
+                                    {msg.role === 'user' && (
+                                      <Avatar className="h-8 w-8">
+                                          <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ""} />
+                                          <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
+                                      </Avatar>
+                                    )}
+                                </div>
+                            ))}
+                             {isAiResponding && (
+                                <div className="flex items-end gap-2">
+                                     <Avatar className="h-8 w-8"><AvatarFallback><Bot size={20}/></AvatarFallback></Avatar>
+                                    <div className="max-w-md rounded-lg p-3 bg-muted">
+                                        <div className="flex items-center gap-2">
+                                           <span className="h-2 w-2 bg-primary rounded-full animate-pulse [animation-delay:-0.3s]"></span>
+                                           <span className="h-2 w-2 bg-primary rounded-full animate-pulse [animation-delay:-0.15s]"></span>
+                                           <span className="h-2 w-2 bg-primary rounded-full animate-pulse"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            <div ref={conversationEndRef} />
+                        </div>
+                        <form onSubmit={chatForm.handleSubmit(onSendMessage)} className="mt-4 flex gap-2">
+                            <Input 
+                                {...chatForm.register("message")}
+                                placeholder="Digite sua resposta..."
+                                autoComplete="off"
+                                disabled={isAiResponding}
+                            />
+                            <Button type="submit" disabled={isAiResponding}>
+                                <Send className="h-4 w-4" />
+                            </Button>
+                        </form>
+                         {chatForm.formState.errors.message && <p className="text-sm text-destructive mt-1">{chatForm.formState.errors.message.message}</p>}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+        
+        <div className="mt-8 mb-6">
+            <h2 className="text-xl font-semibold">Ou preencha manualmente:</h2>
+        </div>
+
         {/* Manual Profile Form */}
-        <form onSubmit={profileForm.handleSubmit(onManualSubmit)} className="mt-8 space-y-8">
+        <form onSubmit={profileForm.handleSubmit(onManualSubmit)} className="space-y-8">
              <Card>
                 <CardHeader>
                     <CardTitle>Informações Pessoais e de Contato</CardTitle>
@@ -382,77 +451,12 @@ export default function CandidateProfilePage() {
                 </Button>
             </div>
         </form>
-
-        {/* AI Assistant Card */}
-        <Card className="mt-12">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Bot className="text-primary"/>
-                    Assistente de Currículo com IA
-                </CardTitle>
-                 <CardDescription>
-                    Não quer preencher manualmente? Deixe que nossa IA construa seu currículo através de uma conversa rápida.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                {!isBuildingWithAI ? (
-                    <div className="text-center p-4">
-                        <Button onClick={startConversation}>
-                            <Sparkles className="mr-2 h-4 w-4" />
-                            Começar a criar com IA
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="flex flex-col h-[60vh]">
-                        <div className="flex-grow space-y-4 overflow-y-auto pr-4">
-                            {conversation.map((msg, index) => (
-                                <div key={index} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-                                    {msg.role === 'model' && <Avatar className="h-8 w-8"><AvatarFallback><Bot size={20}/></AvatarFallback></Avatar>}
-                                    <div className={`max-w-md rounded-lg p-3 ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                                    </div>
-                                    {msg.role === 'user' && (
-                                      <Avatar className="h-8 w-8">
-                                          <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ""} />
-                                          <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
-                                      </Avatar>
-                                    )}
-                                </div>
-                            ))}
-                             {isAiResponding && (
-                                <div className="flex items-end gap-2">
-                                     <Avatar className="h-8 w-8"><AvatarFallback><Bot size={20}/></AvatarFallback></Avatar>
-                                    <div className="max-w-md rounded-lg p-3 bg-muted">
-                                        <div className="flex items-center gap-2">
-                                           <span className="h-2 w-2 bg-primary rounded-full animate-pulse [animation-delay:-0.3s]"></span>
-                                           <span className="h-2 w-2 bg-primary rounded-full animate-pulse [animation-delay:-0.15s]"></span>
-                                           <span className="h-2 w-2 bg-primary rounded-full animate-pulse"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            <div ref={conversationEndRef} />
-                        </div>
-                        <form onSubmit={chatForm.handleSubmit(onSendMessage)} className="mt-4 flex gap-2">
-                            <Input 
-                                {...chatForm.register("message")}
-                                placeholder="Digite sua resposta..."
-                                autoComplete="off"
-                                disabled={isAiResponding}
-                            />
-                            <Button type="submit" disabled={isAiResponding}>
-                                <Send className="h-4 w-4" />
-                            </Button>
-                        </form>
-                         {chatForm.formState.errors.message && <p className="text-sm text-destructive mt-1">{chatForm.formState.errors.message.message}</p>}
-                    </div>
-                )}
-            </CardContent>
-        </Card>
     </div>
   );
 }
 
       
+
+    
 
     
